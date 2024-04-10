@@ -1,32 +1,32 @@
 package dev.sterner.brewinandchewin.client.renderer;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
 import dev.sterner.brewinandchewin.common.block.entity.ItemCoasterBlockEntity;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.block.entity.BlockEntityRenderer;
-import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
-import net.minecraft.client.render.model.json.ModelTransformationMode;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.RotationAxis;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
+import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
+import net.minecraft.util.Mth;
+import net.minecraft.world.item.ItemDisplayContext;
+import net.minecraft.world.item.ItemStack;
 
 public class ItemCoasterRenderer implements BlockEntityRenderer<ItemCoasterBlockEntity> {
-    public ItemCoasterRenderer(BlockEntityRendererFactory.Context ctx) {
+    public ItemCoasterRenderer(BlockEntityRendererProvider.Context ctx) {
     }
 
     @Override
-    public void render(ItemCoasterBlockEntity entity, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay) {
+    public void render(ItemCoasterBlockEntity entity, float tickDelta, PoseStack matrices, MultiBufferSource vertexConsumers, int light, int overlay) {
         ItemStack boardStack = entity.getStoredItem();
-        int posLong = (int) entity.getPos().asLong();
-        if (!boardStack.isEmpty() && entity.getWorld() != null) {
-            matrices.push();
-            matrices.translate(0.5, 0.3 + (double) (MathHelper.sin((float) entity.getWorld().getTime() / 50.0F) / 40.0F), 0.5);
-            float f3 = 3.2F * ((float) entity.getWorld().getTime() + 1.0F) / 5.0F;
-            matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(f3));
+        int posLong = (int) entity.getBlockPos().asLong();
+        if (!boardStack.isEmpty() && entity.getLevel() != null) {
+            matrices.pushPose();
+            matrices.translate(0.5, 0.3 + (double) (Mth.sin((float) entity.getLevel().getGameTime() / 50.0F) / 40.0F), 0.5);
+            float f3 = 3.2F * ((float) entity.getLevel().getGameTime() + 1.0F) / 5.0F;
+            matrices.mulPose(Axis.YP.rotationDegrees(f3));
             matrices.scale(0.5F, 0.5F, 0.5F);
-            MinecraftClient.getInstance().getItemRenderer().renderItem(boardStack, ModelTransformationMode.FIXED, light, overlay, matrices, vertexConsumers, entity.getWorld(), posLong);
-            matrices.pop();
+            Minecraft.getInstance().getItemRenderer().renderStatic(boardStack, ItemDisplayContext.FIXED, light, overlay, matrices, vertexConsumers, entity.getLevel(), posLong);
+            matrices.popPose();
         }
     }
 }

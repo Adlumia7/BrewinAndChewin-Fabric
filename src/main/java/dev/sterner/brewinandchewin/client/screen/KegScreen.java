@@ -4,21 +4,20 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import dev.sterner.brewinandchewin.BrewinAndChewin;
 import dev.sterner.brewinandchewin.common.block.screen.KegBlockScreenHandler;
 import dev.sterner.brewinandchewin.common.util.BCTextUtils;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
-
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
 
-public class KegScreen extends HandledScreen<KegBlockScreenHandler> {
-    private static final Identifier BACKGROUND_TEXTURE = new Identifier(BrewinAndChewin.MODID, "textures/gui/keg.png");
+public class KegScreen extends AbstractContainerScreen<KegBlockScreenHandler> {
+    private static final ResourceLocation BACKGROUND_TEXTURE = new ResourceLocation(BrewinAndChewin.MODID, "textures/gui/keg.png");
     private static final Rectangle PROGRESS_ARROW = new Rectangle(72, 44, 0, 9);
     private static final Rectangle FRIGID_BAR = new Rectangle(72, 39, 6, 4);
     private static final Rectangle COLD_BAR = new Rectangle(78, 39, 7, 4);
@@ -30,30 +29,30 @@ public class KegScreen extends HandledScreen<KegBlockScreenHandler> {
     private static final int[] BUBBLELENGTHS = new int[]{24, 20, 16, 12, 8, 4, 0};
     private boolean mouseDown;
 
-    public KegScreen(KegBlockScreenHandler handler, PlayerInventory inventory, Text title) {
+    public KegScreen(KegBlockScreenHandler handler, Inventory inventory, Component title) {
         super(handler, inventory, title);
     }
 
     @Override
     protected void init() {
         super.init();
-        this.titleX = 27;
-        this.titleY = 17;
+        this.titleLabelX = 27;
+        this.titleLabelY = 17;
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
         this.renderBackground(context);
         super.render(context, mouseX, mouseY, delta);
         this.renderTemperatureTooltip(context, mouseX, mouseY);
         this.renderMealDisplayTooltip(context, mouseX, mouseY);
     }
 
-    private void renderTemperatureTooltip(DrawContext ctx, int mouseX, int mouseY) {
-        if (this.isPointWithinBounds(77, 39, 33, 4, mouseX, mouseY)) {
-            List<Text> tooltip = new ArrayList<>();
-            MutableText key = null;
-            int i = this.handler.getTemperature();
+    private void renderTemperatureTooltip(GuiGraphics ctx, int mouseX, int mouseY) {
+        if (this.isHovering(77, 39, 33, 4, mouseX, mouseY)) {
+            List<Component> tooltip = new ArrayList<>();
+            MutableComponent key = null;
+            int i = this.menu.getTemperature();
             if (i < -8) {
                 key = BCTextUtils.getTranslation("container.keg.frigid");
             }
@@ -71,73 +70,73 @@ public class KegScreen extends HandledScreen<KegBlockScreenHandler> {
             }
             tooltip.add(key);
 
-            ctx.drawTooltip(this.textRenderer, tooltip, mouseX, mouseY);
+            ctx.renderComponentTooltip(this.font, tooltip, mouseX, mouseY);
         }
     }
 
-    protected void renderMealDisplayTooltip(DrawContext ctx, int mouseX, int mouseY) {
-        if (this.client != null && this.client.player != null && this.handler.getCursorStack().isEmpty() && this.focusedSlot != null && this.focusedSlot.hasStack()) {
-            if (this.focusedSlot.id == 5) {
-                List<Text> tooltip = new ArrayList<>();
+    protected void renderMealDisplayTooltip(GuiGraphics ctx, int mouseX, int mouseY) {
+        if (this.minecraft != null && this.minecraft.player != null && this.menu.getCarried().isEmpty() && this.hoveredSlot != null && this.hoveredSlot.hasItem()) {
+            if (this.hoveredSlot.index == 5) {
+                List<Component> tooltip = new ArrayList<>();
 
-                ItemStack mealStack = this.focusedSlot.getStack();
-                tooltip.add(((MutableText) mealStack.getName()).formatted(mealStack.getRarity().formatting));
+                ItemStack mealStack = this.hoveredSlot.getItem();
+                tooltip.add(((MutableComponent) mealStack.getHoverName()).withStyle(mealStack.getRarity().color));
 
-                ItemStack containerStack = this.handler.blockEntity.getContainer();
-                String container = !containerStack.isEmpty() ? containerStack.getItem().getName().getString() : "";
+                ItemStack containerStack = this.menu.blockEntity.getContainer();
+                String container = !containerStack.isEmpty() ? containerStack.getItem().getDescription().getString() : "";
 
-                tooltip.add(BCTextUtils.getTranslation("container.keg.served_in", container).formatted(Formatting.GRAY));
+                tooltip.add(BCTextUtils.getTranslation("container.keg.served_in", container).withStyle(ChatFormatting.GRAY));
 
-                ctx.drawTooltip(this.textRenderer, tooltip, mouseX, mouseY);
+                ctx.renderComponentTooltip(this.font, tooltip, mouseX, mouseY);
             } else {
-                ctx.drawItemTooltip(textRenderer, this.focusedSlot.getStack(), mouseX, mouseY);
+                ctx.renderTooltip(font, this.hoveredSlot.getItem(), mouseX, mouseY);
 
             }
         }
     }
 
     @Override
-    protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
-        super.drawForeground(context, mouseX, mouseY);
-        context.drawText(this.textRenderer, this.playerInventoryTitle, 8, (this.backgroundHeight - 96 + 2), 4210752, false);
+    protected void renderLabels(GuiGraphics context, int mouseX, int mouseY) {
+        super.renderLabels(context, mouseX, mouseY);
+        context.drawString(this.font, this.playerInventoryTitle, 8, (this.imageHeight - 96 + 2), 4210752, false);
     }
 
 
     @Override
-    protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
+    protected void renderBg(GuiGraphics context, float delta, int mouseX, int mouseY) {
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-        if (this.client == null) {
+        if (this.minecraft == null) {
             return;
         }
 
-        context.drawTexture(BACKGROUND_TEXTURE, this.x, this.y, 0, 0, this.backgroundWidth, this.backgroundHeight);
+        context.blit(INVENTORY_LOCATION, this.leftPos, this.topPos, 0, 0, this.imageWidth, this.imageHeight);
 
         // Render progress arrow
-        int l = this.handler.getFermentProgressionScaled();
-        context.drawTexture(BACKGROUND_TEXTURE, this.x + PROGRESS_ARROW.x, this.y + PROGRESS_ARROW.y, 176, 28, l + 1, PROGRESS_ARROW.height);
+        int l = this.menu.getFermentProgressionScaled();
+        context.blit(INVENTORY_LOCATION, this.leftPos + PROGRESS_ARROW.x, this.topPos + PROGRESS_ARROW.y, 176, 28, l + 1, PROGRESS_ARROW.height);
 
-        int temp = this.handler.getTemperature();
+        int temp = this.menu.getTemperature();
         if (temp < -4 && temp > -9) {
-            context.drawTexture(BACKGROUND_TEXTURE, this.x + COLD_BAR.x, this.y + COLD_BAR.y, 182, 0, COLD_BAR.width, COLD_BAR.height);
+            context.blit(INVENTORY_LOCATION, this.leftPos + COLD_BAR.x, this.topPos + COLD_BAR.y, 182, 0, COLD_BAR.width, COLD_BAR.height);
         }
         if (temp < -8) {
-            context.drawTexture(BACKGROUND_TEXTURE, this.x + COLD_BAR.x, this.y + COLD_BAR.y, 182, 0, COLD_BAR.width, COLD_BAR.height);
-            context.drawTexture(BACKGROUND_TEXTURE, this.x + FRIGID_BAR.x, this.y + FRIGID_BAR.y, 176, 0, FRIGID_BAR.width, FRIGID_BAR.height);
+            context.blit(INVENTORY_LOCATION, this.leftPos + COLD_BAR.x, this.topPos + COLD_BAR.y, 182, 0, COLD_BAR.width, COLD_BAR.height);
+            context.blit(INVENTORY_LOCATION, this.leftPos + FRIGID_BAR.x, this.topPos + FRIGID_BAR.y, 176, 0, FRIGID_BAR.width, FRIGID_BAR.height);
         }
         if (temp > 4 && temp < 9) {
-            context.drawTexture(BACKGROUND_TEXTURE, this.x + WARM_BAR.x, this.y + WARM_BAR.y, 195, 0, WARM_BAR.width, WARM_BAR.height);
+            context.blit(INVENTORY_LOCATION, this.leftPos + WARM_BAR.x, this.topPos + WARM_BAR.y, 195, 0, WARM_BAR.width, WARM_BAR.height);
         }
         if (temp > 8) {
-            context.drawTexture(BACKGROUND_TEXTURE, this.x + WARM_BAR.x, this.y + WARM_BAR.y, 195, 0, WARM_BAR.width, WARM_BAR.height);
-            context.drawTexture(BACKGROUND_TEXTURE, this.x + HOT_BAR.x, this.y + HOT_BAR.y, 202, 0, HOT_BAR.width, HOT_BAR.height);
+            context.blit(INVENTORY_LOCATION, this.leftPos + WARM_BAR.x, this.topPos + WARM_BAR.y, 195, 0, WARM_BAR.width, WARM_BAR.height);
+            context.blit(INVENTORY_LOCATION, this.leftPos + HOT_BAR.x, this.topPos + HOT_BAR.y, 202, 0, HOT_BAR.width, HOT_BAR.height);
         }
 
-        int i = this.handler.getFermentingTicks();
+        int i = this.menu.getFermentingTicks();
         if (i > 0) {
             int j;
             j = BUBBLELENGTHS[i / 5 % 7];
-            context.drawTexture(BACKGROUND_TEXTURE, this.x + BUBBLE_1.x, this.y + BUBBLE_1.y, 176, 4, BUBBLE_1.width, BUBBLE_1.height - j);
-            context.drawTexture(BACKGROUND_TEXTURE, this.x + BUBBLE_2.x, this.y + BUBBLE_2.y, 186, 4, BUBBLE_2.width, BUBBLE_2.height - j);
+            context.blit(INVENTORY_LOCATION, this.leftPos + BUBBLE_1.x, this.topPos + BUBBLE_1.y, 176, 4, BUBBLE_1.width, BUBBLE_1.height - j);
+            context.blit(INVENTORY_LOCATION, this.leftPos + BUBBLE_2.x, this.topPos + BUBBLE_2.y, 186, 4, BUBBLE_2.width, BUBBLE_2.height - j);
         }
     }
 

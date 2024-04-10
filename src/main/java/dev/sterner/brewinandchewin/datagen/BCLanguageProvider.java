@@ -5,13 +5,12 @@ import dev.sterner.brewinandchewin.common.registry.BCObjects;
 import dev.sterner.brewinandchewin.common.registry.BCStatusEffects;
 import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricLanguageProvider;
-import net.minecraft.block.Block;
-import net.minecraft.block.WallSignBlock;
-import net.minecraft.block.WallTorchBlock;
-import net.minecraft.entity.effect.StatusEffect;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.Item;
-
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.WallSignBlock;
+import net.minecraft.world.level.block.WallTorchBlock;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -24,25 +23,25 @@ public class BCLanguageProvider extends FabricLanguageProvider {
     public void generateTranslations(TranslationBuilder builder) {
         Set<Block> blocks = new HashSet<>(BCObjects.BLOCKS.keySet());
         Set<Item> items = new HashSet<>(BCObjects.ITEMS.keySet());
-        Set<StatusEffect> effects = new HashSet<>(BCStatusEffects.STATUS_EFFECTS.keySet());
+        Set<MobEffect> effects = new HashSet<>(BCStatusEffects.STATUS_EFFECTS.keySet());
         blocks.removeIf(b -> b instanceof WallTorchBlock);
         blocks.removeIf(b -> b instanceof WallSignBlock);
         blocks.forEach(b -> {
-            String name = b.getTranslationKey().replaceFirst("block.brewinandchewin.", "");
+            String name = b.getDescriptionId().replaceFirst("block.brewinandchewin.", "");
             name = toTitleCase(correctBlockItemName(name), "_").replaceAll("Of", "of");
-            builder.add(b.getTranslationKey(), name);
+            builder.add(b.getDescriptionId(), name);
         });
         items.removeIf(i -> i instanceof BlockItem);
         items.forEach(i ->
         {
-            String name = i.getTranslationKey().replaceFirst("item.brewinandchewin.", "");
+            String name = i.getDescriptionId().replaceFirst("item.brewinandchewin.", "");
             name = toTitleCase(correctBlockItemName(name), "_").replaceAll("Of", "of");
-            builder.add(i.getTranslationKey(), name);
+            builder.add(i.getDescriptionId(), name);
         });
 
         effects.forEach(e -> {
-            String name = toTitleCase(e.getTranslationKey().replaceFirst("effect.brewinandchewin.", ""), "_");
-            builder.add(e.getTranslationKey(), name);
+            String name = toTitleCase(e.getDescriptionId().replaceFirst("effect.brewinandchewin.", ""), "_");
+            builder.add(e.getDescriptionId(), name);
         });
 
         builder.add(BrewinAndChewin.MODID + ".group.main", "Brewin' and Chewin'");

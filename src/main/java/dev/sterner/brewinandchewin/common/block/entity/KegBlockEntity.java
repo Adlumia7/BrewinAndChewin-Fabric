@@ -1,10 +1,6 @@
 package dev.sterner.brewinandchewin.common.block.entity;
 
 import com.google.common.collect.Lists;
-import com.nhoryzon.mc.farmersdelight.entity.block.SyncedBlockEntity;
-import com.nhoryzon.mc.farmersdelight.entity.block.inventory.RecipeWrapper;
-import com.nhoryzon.mc.farmersdelight.mixin.accessors.RecipeManagerAccessorMixin;
-import com.nhoryzon.mc.farmersdelight.registry.TagsRegistry;
 import dev.sterner.brewinandchewin.common.block.FermentationControllerBlock;
 import dev.sterner.brewinandchewin.common.block.KegBlock;
 import dev.sterner.brewinandchewin.common.block.screen.KegBlockScreenHandler;
@@ -13,133 +9,150 @@ import dev.sterner.brewinandchewin.common.registry.BCBlockEntityTypes;
 import dev.sterner.brewinandchewin.common.registry.BCRecipeTypes;
 import dev.sterner.brewinandchewin.common.registry.BCTags;
 import dev.sterner.brewinandchewin.common.util.BCTextUtils;
+import io.github.fabricators_of_create.porting_lib.transfer.item.ItemStackHandlerContainer;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.HorizontalFacingBlock;
-import net.minecraft.entity.ExperienceOrbEntity;
-import net.minecraft.entity.ItemEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.Inventories;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.recipe.Recipe;
-import net.minecraft.screen.PropertyDelegate;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.state.property.Properties;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.Nameable;
-import net.minecraft.util.collection.DefaultedList;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.NonNullList;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Mth;
+import net.minecraft.world.Container;
+import net.minecraft.world.ContainerHelper;
+import net.minecraft.world.Nameable;
+import net.minecraft.world.entity.ExperienceOrb;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.HorizontalDirectionalBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
+import vectorwing.farmersdelight.common.block.entity.SyncedBlockEntity;
+import vectorwing.farmersdelight.common.mixin.accessor.RecipeManagerAccessor;
+import vectorwing.farmersdelight.common.tag.ModTags;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class KegBlockEntity extends SyncedBlockEntity implements KegBlockInventory, ExtendedScreenHandlerFactory, Nameable {
+public class KegBlockEntity extends SyncedBlockEntity implements ExtendedScreenHandlerFactory, Nameable {
     public static final int MEAL_DISPLAY_SLOT = 5;
     public static final int CONTAINER_SLOT = 7;
     public static final int OUTPUT_SLOT = 8;
     public static final int INVENTORY_SIZE = OUTPUT_SLOT + 1;
 
-    private final DefaultedList<ItemStack> inventory;
+    public final ItemStackHandlerContainer inventory;
 
     private int fermentTime;
     private int fermentTimeTotal;
     private ItemStack drinkContainerStack;
-    private Text customName;
+    private Component customName;
     public int kegTemperature;
-    protected final PropertyDelegate kegData;
-    private final Object2IntOpenHashMap<Identifier> usedRecipeTracker;
-    private Identifier lastRecipeID;
+    protected final ContainerData kegData;
+    private final Object2IntOpenHashMap<ResourceLocation> usedRecipeTracker;
+    private ResourceLocation lastRecipeID;
     private boolean checkNewRecipe;
 
     public KegBlockEntity(BlockPos pos, BlockState state) {
         super(BCBlockEntityTypes.KEG, pos, state);
-        this.inventory = DefaultedList.ofSize(INVENTORY_SIZE, ItemStack.EMPTY);
+        this.inventory = createHandler();
         this.drinkContainerStack = ItemStack.EMPTY;
         this.kegData = new KegSyncedData();
         this.usedRecipeTracker = new Object2IntOpenHashMap<>();
         this.checkNewRecipe = true;
     }
 
+    private ItemStackHandlerContainer createHandler() {
+        return new ItemStackHandlerContainer(INVENTORY_SIZE)
+        {
+            @Override
+            protected void onContentsChanged(int slot) {
+                if (slot >= 0 && slot < MEAL_DISPLAY_SLOT) {
+                    checkNewRecipe = true;
+                }
+                inventoryChanged();
+            }
+        };
+    }
+
     @Override
-    public void readNbt(NbtCompound compound) {
-        super.readNbt(compound);
-        readInventoryNbt(compound);
+    public void load(CompoundTag compound) {
+        super.load(compound);
+        inventory.deserializeNBT(compound.getCompound("Inventory"));
         fermentTime = compound.getInt("FermentTime");
         fermentTimeTotal = compound.getInt("FermentTimeTotal");
-        drinkContainerStack = ItemStack.fromNbt(compound.getCompound("Container"));
+        drinkContainerStack = ItemStack.of(compound.getCompound("Container"));
         kegTemperature = compound.getInt("Temperature");
         if (compound.contains("CustomName", 8)) {
-            customName = Text.Serializer.fromJson(compound.getString("CustomName"));
+            customName = Component.Serializer.fromJson(compound.getString("CustomName"));
         }
-        NbtCompound compoundRecipes = compound.getCompound("RecipesUsed");
-        for (String key : compoundRecipes.getKeys()) {
-            usedRecipeTracker.put(new Identifier(key), compoundRecipes.getInt(key));
+        CompoundTag compoundRecipes = compound.getCompound("RecipesUsed");
+        for (String key : compoundRecipes.getAllKeys()) {
+            usedRecipeTracker.put(new ResourceLocation(key), compoundRecipes.getInt(key));
         }
     }
 
     @Override
-    public void writeNbt(NbtCompound compound) {
-        super.writeNbt(compound);
+    public void saveAdditional(CompoundTag compound) {
+        super.saveAdditional(compound);
         compound.putInt("FermentTime", fermentTime);
         compound.putInt("FermentTimeTotal", fermentTimeTotal);
-        compound.put("Container", drinkContainerStack.writeNbt(new NbtCompound()));
+        compound.put("Container", drinkContainerStack.save(new CompoundTag()));
         compound.putInt("Temperature", kegTemperature);
         if (customName != null) {
-            compound.putString("CustomName", Text.Serializer.toJson(customName));
+            compound.putString("CustomName", Component.Serializer.toJson(customName));
         }
-        writeInventoryNbt(compound);
-        NbtCompound compoundRecipes = new NbtCompound();
+        compound.put("Inventory", inventory.serializeNBT());
+        CompoundTag compoundRecipes = new CompoundTag();
         usedRecipeTracker.forEach((recipeId, craftedAmount) -> compoundRecipes.putInt(recipeId.toString(), craftedAmount));
         compound.put("RecipesUsed", compoundRecipes);
     }
 
-    public NbtCompound writeDrink(NbtCompound compound) {
+    public CompoundTag writeDrink(CompoundTag compound) {
         if (!this.getDrink().isEmpty()) {
-            DefaultedList<ItemStack> drops = DefaultedList.ofSize(INVENTORY_SIZE, ItemStack.EMPTY);
+            NonNullList<ItemStack> drops = NonNullList.withSize(INVENTORY_SIZE, ItemStack.EMPTY);
 
             for (int i = 0; i < INVENTORY_SIZE; ++i) {
-                drops.set(i, i == MEAL_DISPLAY_SLOT ? getStack(i) : ItemStack.EMPTY);
+                drops.set(i, i == MEAL_DISPLAY_SLOT ? this.inventory.getItem(i) : ItemStack.EMPTY);
             }
 
             if (this.customName != null) {
-                compound.putString("CustomName", Text.Serializer.toJson(this.customName));
+                compound.putString("CustomName", Component.Serializer.toJson(this.customName));
             }
 
-            compound.put("Container", drinkContainerStack.writeNbt(new NbtCompound()));
-            compound.put("Inventory", Inventories.writeNbt(new NbtCompound(), drops));
+            compound.put("Container", drinkContainerStack.save(new CompoundTag()));
+            compound.put("Inventory", ContainerHelper.saveAllItems(new CompoundTag(), drops));
         }
         return compound;
     }
 
     // ======== BASIC FUNCTIONALITY ========
 
-    public static void fermentingTick(World level, BlockPos pos, BlockState state, KegBlockEntity keg) {
+    public static void fermentingTick(Level level, BlockPos pos, BlockState state, KegBlockEntity keg) {
         boolean didInventoryChange = false;
         keg.updateTemperature();
         if (keg.hasInput()) {
-            Optional<KegRecipe> recipe = keg.getMatchingRecipe(new RecipeWrapper(keg));
+            Optional<KegRecipe> recipe = keg.getMatchingRecipe(keg.inventory);
             if (recipe.isPresent() && keg.canFerment(recipe.get())) {
                 didInventoryChange = keg.processFermenting(recipe.get(), keg);
             } else {
                 keg.fermentTime = 0;
             }
         } else if (keg.fermentTimeTotal > 0) {
-            keg.fermentTime = MathHelper.clamp(keg.fermentTime - 2, 0, keg.fermentTimeTotal);
+            keg.fermentTime = Mth.clamp(keg.fermentTime - 2, 0, keg.fermentTimeTotal);
         }
 
         ItemStack drinkStack = keg.getDrink();
@@ -147,7 +160,7 @@ public class KegBlockEntity extends SyncedBlockEntity implements KegBlockInvento
             if (!keg.doesDrinkHaveContainer(drinkStack)) {
                 keg.moveDrinkToOutput();
                 didInventoryChange = true;
-            } else if (!keg.getStack(6).isEmpty()) {
+            } else if (!keg.inventory.getItem(6).isEmpty()) {
                 keg.useStoredContainersOnMeal();
                 didInventoryChange = true;
             }
@@ -159,7 +172,7 @@ public class KegBlockEntity extends SyncedBlockEntity implements KegBlockInvento
     }
 
     public void updateTemperature() {
-        if (this.world != null && this.world.getDimension().ultrawarm()) {
+        if (this.level != null && this.level.dimensionType().ultraWarm()) {
             this.kegTemperature = 10;
             return;
         }
@@ -172,30 +185,30 @@ public class KegBlockEntity extends SyncedBlockEntity implements KegBlockInvento
         for (heat = -range; heat <= range; ++heat) {
             for (int y = -range; y <= range; ++y) {
                 for (cold = -range; cold <= range; ++cold) {
-                    states.add(this.world.getBlockState(this.getPos().add(heat, y, cold)));
+                    states.add(this.level.getBlockState(this.getBlockPos().offset(heat, y, cold)));
                 }
             }
         }
 
         heat = states.stream()
-                .filter(s -> s.isIn(TagsRegistry.HEAT_SOURCES))
-                .filter(s -> s.contains(Properties.LIT))
-                .filter(s -> s.get(Properties.LIT))
+                .filter(s -> s.is(ModTags.HEAT_SOURCES))
+                .filter(s -> s.hasProperty(BlockStateProperties.LIT))
+                .filter(s -> s.getValue(BlockStateProperties.LIT))
                 .mapToInt(s -> 1)
                 .sum();
 
         heat += states.stream()
-                .filter(s -> s.isIn(TagsRegistry.HEAT_SOURCES))
-                .filter(s -> !s.contains(Properties.LIT))
+                .filter(s -> s.is(ModTags.HEAT_SOURCES))
+                .filter(s -> !s.hasProperty(BlockStateProperties.LIT))
                 .mapToInt(s -> 1)
                 .sum();
 
-        BlockState stateBelow = this.world.getBlockState(this.getPos().down());
-        if (stateBelow.isIn(TagsRegistry.HEAT_CONDUCTORS)) {
-            BlockState stateFurtherBelow = this.world.getBlockState(this.getPos().down(2));
-            if (stateFurtherBelow.isIn(TagsRegistry.HEAT_SOURCES)) {
-                if (stateFurtherBelow.contains(Properties.LIT)) {
-                    if (stateFurtherBelow.get(Properties.LIT)) {
+        BlockState stateBelow = this.level.getBlockState(this.getBlockPos().below());
+        if (stateBelow.is(ModTags.HEAT_CONDUCTORS)) {
+            BlockState stateFurtherBelow = this.level.getBlockState(this.getBlockPos().below(2));
+            if (stateFurtherBelow.is(ModTags.HEAT_SOURCES)) {
+                if (stateFurtherBelow.hasProperty(BlockStateProperties.LIT)) {
+                    if (stateFurtherBelow.getValue(BlockStateProperties.LIT)) {
                         ++heat;
                     }
                 } else {
@@ -205,11 +218,11 @@ public class KegBlockEntity extends SyncedBlockEntity implements KegBlockInvento
         }
 
         cold = states.stream()
-                .filter(s -> s.isIn(BCTags.FREEZE_SOURCES))
+                .filter(s -> s.is(BCTags.FREEZE_SOURCES))
                 .mapToInt((s) -> 1)
                 .sum();
 
-        float biomeTemperature = this.world.getBiome(this.getPos()).value().getTemperature();
+        float biomeTemperature = this.level.getBiome(this.getBlockPos()).value().getBaseTemperature();
         if (biomeTemperature <= 0.0F) {
             cold += 2;
         } else if (biomeTemperature == 2.0F) {
@@ -217,13 +230,13 @@ public class KegBlockEntity extends SyncedBlockEntity implements KegBlockInvento
         }
 
         int fcTemp = 0;
-        if (this.world.getBlockEntity(pos.down()) instanceof FermentationControllerBlockEntity blockEntity && world.getBlockState(pos.down()).get(FermentationControllerBlock.VERTICAL)) {
+        if (this.level.getBlockEntity(worldPosition.below()) instanceof FermentationControllerBlockEntity blockEntity && level.getBlockState(worldPosition.below()).getValue(FermentationControllerBlock.VERTICAL)) {
             fcTemp = blockEntity.getTemperature();
         } else {
-            for (Direction direction : Direction.Type.HORIZONTAL) {
-                BlockPos pos1 = pos.offset(direction);
-                if (world.getBlockEntity(pos1) instanceof FermentationControllerBlockEntity blockEntity && !world.getBlockState(pos1).get(FermentationControllerBlock.VERTICAL)) {
-                    if (direction.getOpposite() == world.getBlockState(pos1).get(HorizontalFacingBlock.FACING)) {
+            for (Direction direction : Direction.Plane.HORIZONTAL) {
+                BlockPos pos1 = worldPosition.relative(direction);
+                if (level.getBlockEntity(pos1) instanceof FermentationControllerBlockEntity blockEntity && !level.getBlockState(pos1).getValue(FermentationControllerBlock.VERTICAL)) {
+                    if (direction.getOpposite() == level.getBlockState(pos1).getValue(HorizontalDirectionalBlock.FACING)) {
                         fcTemp = blockEntity.getTemperature();
                         break;
                     }
@@ -250,26 +263,26 @@ public class KegBlockEntity extends SyncedBlockEntity implements KegBlockInvento
         return 3;
     }
 
-    public static void animationTick(World level, BlockPos pos, BlockState state, KegBlockEntity keg) {
+    public static void animationTick(Level level, BlockPos pos, BlockState state, KegBlockEntity keg) {
     }
 
-    private Optional<KegRecipe> getMatchingRecipe(RecipeWrapper inventoryWrapper) {
-        if (world == null) return Optional.empty();
+    private Optional<KegRecipe> getMatchingRecipe(ItemStackHandlerContainer inventoryWrapper) {
+        if (level == null) return Optional.empty();
 
         if (lastRecipeID != null) {
-            Recipe<Inventory> recipe = ((RecipeManagerAccessorMixin) world.getRecipeManager()).getAllForType(BCRecipeTypes.KEG_RECIPE_TYPE).get(lastRecipeID);
+            Recipe<Container> recipe = ((RecipeManagerAccessor) level.getRecipeManager()).getRecipeMap(BCRecipeTypes.KEG_RECIPE_TYPE).get(lastRecipeID);
             if (recipe != null) {
-                if (recipe.matches(inventoryWrapper, world)) {
+                if (recipe.matches(inventoryWrapper, level)) {
                     return Optional.of((KegRecipe) recipe);
                 }
-                if (ItemStack.areItemsEqual(recipe.getOutput(world.getRegistryManager()), getDrink())) {
+                if (ItemStack.isSameItem(recipe.getResultItem(level.registryAccess()), getDrink())) {
                     return Optional.empty();
                 }
             }
         }
 
         if (checkNewRecipe) {
-            Optional<KegRecipe> recipe = world.getRecipeManager().getFirstMatch(BCRecipeTypes.KEG_RECIPE_TYPE, inventoryWrapper, world);
+            Optional<KegRecipe> recipe = level.getRecipeManager().getRecipeFor(BCRecipeTypes.KEG_RECIPE_TYPE, inventoryWrapper, level);
             if (recipe.isPresent()) {
                 lastRecipeID = recipe.get().getId();
                 return recipe;
@@ -280,7 +293,6 @@ public class KegBlockEntity extends SyncedBlockEntity implements KegBlockInvento
         return Optional.empty();
     }
 
-    @Override
     public void onContentsChanged(int slot) {
         if (slot >= 0 && slot < 5) {
             this.checkNewRecipe = true;
@@ -293,13 +305,13 @@ public class KegBlockEntity extends SyncedBlockEntity implements KegBlockInvento
         if (!drinkContainerStack.isEmpty()) {
             return drinkContainerStack;
         } else {
-            return new ItemStack(getDrink().getItem().getRecipeRemainder());
+            return new ItemStack(getDrink().getItem().getCraftingRemainingItem());
         }
     }
 
     private boolean hasInput() {
         for (int i = 0; i < 5; ++i) {
-            if (!getStack(i).isEmpty()) {
+            if (!inventory.getItem(i).isEmpty()) {
                 return true;
             }
         }
@@ -307,30 +319,30 @@ public class KegBlockEntity extends SyncedBlockEntity implements KegBlockInvento
     }
 
     protected boolean canFerment(KegRecipe recipe) {
-        if (world == null) return false;
+        if (level == null) return false;
 
         int recipeTemp = recipe.getTemperature();
         if (this.hasInput() && (recipeTemp == 3 || recipeTemp == this.getTemperature())) {
-            ItemStack resultStack = recipe.getOutput(world.getRegistryManager());
+            ItemStack resultStack = recipe.getResultItem(level.registryAccess());
             if (resultStack.isEmpty()) {
                 return false;
             } else {
-                ItemStack fluidStack = this.getStack(4);
-                ItemStack storedContainerStack = this.getStack(8);
-                if (!storedContainerStack.isEmpty() && fluidStack.getItem().getRecipeRemainder() != null && !fluidStack.getItem().getRecipeRemainder().equals(storedContainerStack.getItem())) {
+                ItemStack fluidStack = this.inventory.getItem(4);
+                ItemStack storedContainerStack = this.inventory.getItem(8);
+                if (!storedContainerStack.isEmpty() && fluidStack.getItem().getCraftingRemainingItem() != null && !fluidStack.getItem().getCraftingRemainingItem().equals(storedContainerStack.getItem())) {
                     return false;
-                } else if (storedContainerStack.getCount() >= storedContainerStack.getMaxCount()) {
+                } else if (storedContainerStack.getCount() >= storedContainerStack.getMaxStackSize()) {
                     return false;
                 } else {
-                    ItemStack storedDrinkStack = this.getStack(5);
+                    ItemStack storedDrinkStack = this.inventory.getItem(5);
                     if (storedDrinkStack.isEmpty()) {
                         return true;
-                    } else if (!ItemStack.areItemsEqual(storedDrinkStack, resultStack)) {
+                    } else if (!ItemStack.isSameItem(storedDrinkStack, resultStack)) {
                         return false;
-                    } else if (storedDrinkStack.getCount() + resultStack.getCount() <= this.getMaxCountForSlot(5)) {
+                    } else if (storedDrinkStack.getCount() + resultStack.getCount() <= this.inventory.getSlotLimit(5)) {
                         return true;
                     } else {
-                        return storedDrinkStack.getCount() + resultStack.getCount() <= resultStack.getMaxCount();
+                        return storedDrinkStack.getCount() + resultStack.getCount() <= resultStack.getMaxStackSize();
                     }
                 }
             }
@@ -340,7 +352,7 @@ public class KegBlockEntity extends SyncedBlockEntity implements KegBlockInvento
     }
 
     private boolean processFermenting(KegRecipe recipe, KegBlockEntity keg) {
-        if (this.world == null) {
+        if (this.level == null) {
             return false;
         } else {
             ++this.fermentTime;
@@ -350,49 +362,49 @@ public class KegBlockEntity extends SyncedBlockEntity implements KegBlockInvento
             } else {
                 this.fermentTime = 0;
                 this.drinkContainerStack = recipe.getOutputContainer();
-                ItemStack resultStack = recipe.getOutput(world.getRegistryManager());
-                ItemStack storedMealStack = this.getStack(5);
+                ItemStack resultStack = recipe.getResultItem(level.registryAccess());
+                ItemStack storedMealStack = this.inventory.getItem(5);
                 if (storedMealStack.isEmpty()) {
-                    this.setStack(5, resultStack.copy());
-                } else if (ItemStack.areItemsEqual(storedMealStack, resultStack)) {
-                    storedMealStack.increment(resultStack.getCount());
+                    this.inventory.setItem(5, resultStack.copy());
+                } else if (ItemStack.isSameItem(storedMealStack, resultStack)) {
+                    storedMealStack.grow(resultStack.getCount());
                 }
 
-                ItemStack storedContainers = this.getStack(8);
-                ItemStack fluidStack = this.getStack(4);
+                ItemStack storedContainers = this.inventory.getItem(8);
+                ItemStack fluidStack = this.inventory.getItem(4);
                 if (storedContainers.isEmpty()) {
-                    this.setStack(8, fluidStack.copy().getRecipeRemainder());
+                    this.inventory.setItem(8, new ItemStack(fluidStack.copy().getItem().getCraftingRemainingItem()));
                     if (fluidStack.getCount() == 1) {
-                        this.setStack(4, ItemStack.EMPTY);
+                        this.inventory.setItem(4, ItemStack.EMPTY);
                     } else {
-                        this.setStack(4, new ItemStack(fluidStack.getItem(), fluidStack.getCount() - 1));
+                        this.inventory.setItem(4, new ItemStack(fluidStack.getItem(), fluidStack.getCount() - 1));
                     }
-                } else if (ItemStack.areItemsEqual(storedContainers, this.getStack(4).getRecipeRemainder())) {
-                    storedContainers.increment(resultStack.getCount());
+                } else if (ItemStack.isSameItem(storedContainers, this.inventory.getItem(4).getItem().getCraftingRemainingItem().getDefaultInstance())) {
+                    storedContainers.grow(resultStack.getCount());
                     if (fluidStack.getCount() == 1) {
-                        this.setStack(4, ItemStack.EMPTY);
+                        this.inventory.setItem(4, ItemStack.EMPTY);
                     } else {
-                        this.setStack(4, new ItemStack(fluidStack.getItem(), fluidStack.getCount() - 1));
+                        this.inventory.setItem(4, new ItemStack(fluidStack.getItem(), fluidStack.getCount() - 1));
                     }
                 }
 
                 keg.setLastRecipe(recipe);
 
                 for (int i = 0; i < 4; ++i) {
-                    ItemStack slotStack = this.getStack(i);
-                    if (slotStack.getItem().hasRecipeRemainder()) {
-                        Direction direction = this.getCachedState().get(KegBlock.FACING).rotateYCounterclockwise();
-                        double x = (double) this.getPos().getX() + 0.5 + (double) direction.getOffsetX() * 0.25;
-                        double y = (double) this.getPos().getY() + 0.7;
-                        double z = (double) this.getPos().getZ() + 0.5 + (double) direction.getOffsetZ() * 0.25;
+                    ItemStack slotStack = this.inventory.getItem(i);
+                    if (slotStack.getItem().hasCraftingRemainingItem()) {
+                        Direction direction = this.getBlockState().getValue(KegBlock.FACING).getCounterClockWise();
+                        double x = (double) this.getBlockPos().getX() + 0.5 + (double) direction.getStepX() * 0.25;
+                        double y = (double) this.getBlockPos().getY() + 0.7;
+                        double z = (double) this.getBlockPos().getZ() + 0.5 + (double) direction.getStepZ() * 0.25;
 
-                        ItemEntity entity = new ItemEntity(world, x, y, z, this.getStack(i).getRecipeRemainder());
-                        entity.setVelocity(((float) direction.getOffsetX() * 0.08F), 0.25, ((float) direction.getOffsetZ() * 0.08F));
-                        world.spawnEntity(entity);
+                        ItemEntity entity = new ItemEntity(level, x, y, z, this.inventory.getItem(i).getItem().getCraftingRemainingItem().getDefaultInstance());
+                        entity.setDeltaMovement(((float) direction.getStepX() * 0.08F), 0.25, ((float) direction.getStepZ() * 0.08F));
+                        level.addFreshEntity(entity);
                     }
 
                     if (!slotStack.isEmpty()) {
-                        slotStack.decrement(1);
+                        slotStack.shrink(1);
                     }
                 }
 
@@ -403,150 +415,145 @@ public class KegBlockEntity extends SyncedBlockEntity implements KegBlockInvento
 
     public void setLastRecipe(@Nullable Recipe<?> recipe) {
         if (recipe != null) {
-            Identifier recipeID = recipe.getId();
+            ResourceLocation recipeID = recipe.getId();
             usedRecipeTracker.addTo(recipeID, 1);
         }
     }
 
-    public void unlockLastRecipe(PlayerEntity player) {
-        List<Recipe<?>> usedRecipes = this.getUsedRecipesAndPopExperience(player.getWorld(), player.getPos());
-        player.unlockRecipes(usedRecipes);
+    public void unlockLastRecipe(Player player) {
+        List<Recipe<?>> usedRecipes = this.getUsedRecipesAndPopExperience(player.level(), player.position());
+        player.awardRecipes(usedRecipes);
         this.usedRecipeTracker.clear();
     }
 
-    public List<Recipe<?>> getUsedRecipesAndPopExperience(World level, Vec3d pos) {
+    public List<Recipe<?>> getUsedRecipesAndPopExperience(Level level, Vec3 pos) {
         List<Recipe<?>> list = Lists.newArrayList();
 
-        for (Object2IntMap.Entry<Identifier> identifierEntry : this.usedRecipeTracker.object2IntEntrySet()) {
-            level.getRecipeManager().get(identifierEntry.getKey()).ifPresent((recipe) -> {
+        for (Object2IntMap.Entry<ResourceLocation> identifierEntry : this.usedRecipeTracker.object2IntEntrySet()) {
+            level.getRecipeManager().byKey(identifierEntry.getKey()).ifPresent((recipe) -> {
                 list.add(recipe);
-                splitAndSpawnExperience((ServerWorld) level, pos, identifierEntry.getIntValue(), ((KegRecipe) recipe).getExperience());
+                splitAndSpawnExperience((ServerLevel) level, pos, identifierEntry.getIntValue(), ((KegRecipe) recipe).getExperience());
             });
         }
 
         return list;
     }
 
-    private static void splitAndSpawnExperience(ServerWorld level, Vec3d pos, int craftedAmount, float experience) {
-        int expTotal = MathHelper.floor((float) craftedAmount * experience);
-        float expFraction = MathHelper.fractionalPart((float) craftedAmount * experience);
+    private static void splitAndSpawnExperience(ServerLevel level, Vec3 pos, int craftedAmount, float experience) {
+        int expTotal = Mth.floor((float) craftedAmount * experience);
+        float expFraction = Mth.frac((float) craftedAmount * experience);
         if (expFraction != 0.0F && Math.random() < (double) expFraction) {
             ++expTotal;
         }
 
-        ExperienceOrbEntity.spawn(level, pos, expTotal);
+        ExperienceOrb.award(level, pos, expTotal);
     }
 
 
     public ItemStack getDrink() {
-        return this.getStack(5);
+        return this.inventory.getItem(5);
     }
 
-    public DefaultedList<ItemStack> getDroppableInventory() {
-        DefaultedList<ItemStack> drops = DefaultedList.of();
+    public NonNullList<ItemStack> getDroppableInventory() {
+        NonNullList<ItemStack> drops = NonNullList.create();
         for (int i = 0; i < INVENTORY_SIZE; ++i) {
-            drops.add(i == MEAL_DISPLAY_SLOT ? ItemStack.EMPTY : getStack(i));
+            drops.add(i == MEAL_DISPLAY_SLOT ? ItemStack.EMPTY : inventory.getItem(i));
         }
 
         return drops;
     }
 
     private void moveDrinkToOutput() {
-        ItemStack mealStack = getStack(5);
-        ItemStack outputStack = getStack(7);
-        int mealCount = Math.min(mealStack.getCount(), mealStack.getMaxCount() - outputStack.getCount());
+        ItemStack mealStack = inventory.getItem(5);
+        ItemStack outputStack = inventory.getItem(7);
+        int mealCount = Math.min(mealStack.getCount(), mealStack.getMaxStackSize() - outputStack.getCount());
         if (outputStack.isEmpty()) {
-            setStack(7, mealStack.split(mealCount));
+            inventory.setItem(7, mealStack.split(mealCount));
         } else if (outputStack.getItem() == mealStack.getItem()) {
-            mealStack.decrement(mealCount);
-            outputStack.increment(mealCount);
+            mealStack.shrink(mealCount);
+            outputStack.grow(mealCount);
         }
     }
 
     private void useStoredContainersOnMeal() {
-        ItemStack mealStack = getStack(5);
-        ItemStack containerInputStack = getStack(6);
-        ItemStack outputStack = getStack(7);
+        ItemStack mealStack = inventory.getItem(5);
+        ItemStack containerInputStack = inventory.getItem(6);
+        ItemStack outputStack = inventory.getItem(7);
 
-        if (isContainerValid(containerInputStack) && outputStack.getCount() < outputStack.getMaxCount()) {
+        if (isContainerValid(containerInputStack) && outputStack.getCount() < outputStack.getMaxStackSize()) {
             int smallerStackCount = Math.min(mealStack.getCount(), containerInputStack.getCount());
-            int mealCount = Math.min(smallerStackCount, mealStack.getMaxCount() - outputStack.getCount());
+            int mealCount = Math.min(smallerStackCount, mealStack.getMaxStackSize() - outputStack.getCount());
             if (outputStack.isEmpty()) {
-                containerInputStack.decrement(mealCount);
-                setStack(7, mealStack.split(mealCount));
+                containerInputStack.shrink(mealCount);
+                inventory.setItem(7, mealStack.split(mealCount));
             } else if (outputStack.getItem() == mealStack.getItem()) {
-                mealStack.decrement(mealCount);
-                containerInputStack.decrement(mealCount);
-                outputStack.increment(mealCount);
+                mealStack.shrink(mealCount);
+                containerInputStack.shrink(mealCount);
+                outputStack.grow(mealCount);
             }
         }
     }
 
     public ItemStack useHeldItemOnMeal(ItemStack container) {
         if (isContainerValid(container) && !getDrink().isEmpty()) {
-            container.decrement(1);
+            container.shrink(1);
             return getDrink().split(1);
         }
         return ItemStack.EMPTY;
     }
 
     private boolean doesDrinkHaveContainer(ItemStack meal) {
-        return !drinkContainerStack.isEmpty() || meal.getItem().hasRecipeRemainder();
+        return !drinkContainerStack.isEmpty() || meal.getItem().hasCraftingRemainingItem();
     }
 
     public boolean isContainerValid(ItemStack containerItem) {
         if (containerItem.isEmpty()) {
             return false;
         } else {
-            return !this.drinkContainerStack.isEmpty() ? ItemStack.areItemsEqual(this.drinkContainerStack, containerItem) : ItemStack.areItemsEqual(this.getDrink().getRecipeRemainder(), containerItem);
+            return !this.drinkContainerStack.isEmpty() ? ItemStack.isSameItem(this.drinkContainerStack, containerItem) : ItemStack.isSameItem(this.getDrink().getItem().getCraftingRemainingItem().getDefaultInstance(), containerItem);
         }
     }
 
     @Override
-    public Text getName() {
+    public Component getName() {
         return customName != null ? customName : BCTextUtils.getTranslation("container.keg");
     }
 
     @Override
-    public Text getDisplayName() {
+    public Component getDisplayName() {
         return getName();
     }
 
     @Override
     @Nullable
-    public Text getCustomName() {
+    public Component getCustomName() {
         return customName;
     }
 
-    public void setCustomName(Text name) {
+    public void setCustomName(Component name) {
         customName = name;
     }
 
     @Nullable
     @Override
-    public ScreenHandler createMenu(int syncId, PlayerInventory inv, PlayerEntity player) {
+    public AbstractContainerMenu createMenu(int syncId, Inventory inv, Player player) {
         return new KegBlockScreenHandler(syncId, inv, this, kegData);
     }
 
     @Override
-    public NbtCompound toInitialChunkDataNbt() {
-        NbtCompound nbt = new NbtCompound();
-        writeNbt(nbt);
+    public CompoundTag getUpdateTag() {
+        CompoundTag nbt = new CompoundTag();
+        saveAdditional(nbt);
 
         return nbt;
     }
 
     @Override
-    public void writeScreenOpeningData(ServerPlayerEntity player, PacketByteBuf buf) {
-        buf.writeBlockPos(pos);
+    public void writeScreenOpeningData(ServerPlayer player, FriendlyByteBuf buf) {
+        buf.writeBlockPos(worldPosition);
     }
 
-    @Override
-    public DefaultedList<ItemStack> getItems() {
-        return inventory;
-    }
-
-    private class KegSyncedData implements PropertyDelegate {
+    private class KegSyncedData implements ContainerData {
 
         @Override
         public int get(int index) {
@@ -569,7 +576,7 @@ public class KegBlockEntity extends SyncedBlockEntity implements KegBlockInvento
         }
 
         @Override
-        public int size() {
+        public int getCount() {
             return 4;
         }
     }

@@ -1,5 +1,5 @@
 plugins {
-	id 'fabric-loom' version '1.3-SNAPSHOT'
+	id 'fabric-loom' version '1.5-SNAPSHOT'
 	id 'maven-publish'
 	id 'io.github.juuxel.loom-quiltflower' version '1.8.+'
 }
@@ -31,6 +31,17 @@ sourceSets.main.resources.srcDirs += ['src/main/generated']
 
 repositories {
 	maven {
+		name = "Greenhouse Maven"
+		url = 'https://maven.greenhouseteam.dev/releases/'
+	}
+	maven { url = "https://mvn.devos.one/snapshots/" } // Porting Lib
+	maven {
+		url "https://maven.jamieswhiteshirt.com/libs-release" // Reach Entity Attributes (Required by Porting Lib)
+		content {
+			includeGroup "com.jamieswhiteshirt"
+		}
+	}
+	maven {
 		name "Cloth Config, REI"
 		url "https://maven.shedaniel.me"
 	}
@@ -54,7 +65,8 @@ repositories {
 
 dependencies {
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+	//mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+	mappings loom.officialMojangMappings()
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
@@ -64,8 +76,9 @@ dependencies {
 	modApi("me.shedaniel.cloth:cloth-config-fabric:11.1.106") {
 		exclude(group: "net.fabricmc.fabric-api")
 	}
-
-	modImplementation "curse.maven:farmersdelightfabric-482834:${project.delight_version}"
+	modImplementation("vectorwing:FarmersDelight:${fdrf_version}") {
+		exclude(group: "net.fabricmc")
+	}
 	modImplementation "curse.maven:roughly-enough-items-310111:${project.rei_version}"
 	//modImplementation "curse.maven:roughly-enough-resources-325625:${project.rer_version}"
 

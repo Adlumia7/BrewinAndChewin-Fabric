@@ -1,56 +1,55 @@
 package dev.sterner.brewinandchewin.client.renderer;
 
 import com.google.common.collect.Maps;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
 import dev.sterner.brewinandchewin.common.block.TankardBlock;
 import dev.sterner.brewinandchewin.common.block.entity.TankardBlockEntity;
 import dev.sterner.brewinandchewin.common.registry.BCObjects;
-import net.minecraft.block.BlockState;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.block.BlockRenderManager;
-import net.minecraft.client.render.block.entity.BlockEntityRenderer;
-import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.Util;
-import net.minecraft.util.math.RotationAxis;
-import net.minecraft.util.math.RotationPropertyHelper;
-
 import java.util.Map;
+import net.minecraft.Util;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.block.BlockRenderDispatcher;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
+import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.RotationSegment;
 
 public class TankardBlockEntityRenderer implements BlockEntityRenderer<TankardBlockEntity> {
-    private final BlockRenderManager blockRenderer;
+    private final BlockRenderDispatcher blockRenderer;
 
     private Map<Item, BlockState> itemBlockStateMap() {
         return Util.make(Maps.newHashMap(), map -> {
-            map.put(BCObjects.BEER, BCObjects.BEER_TANKARD_BLOCK.getDefaultState());
-            map.put(BCObjects.BLOODY_MARY, BCObjects.BLOODY_MARY_TANKARD_BLOCK.getDefaultState());
-            map.put(BCObjects.EGG_GROG, BCObjects.EGG_GROG_TANKARD_BLOCK.getDefaultState());
-            map.put(BCObjects.GLITTERING_GRENADINE, BCObjects.GLITTERING_GRENADINE_TANKARD_BLOCK.getDefaultState());
-            map.put(BCObjects.MEAD, BCObjects.MEAD_TANKARD_BLOCK.getDefaultState());
-            map.put(BCObjects.PALE_JANE, BCObjects.PALE_JANE_TANKARD_BLOCK.getDefaultState());
-            map.put(BCObjects.RED_RUM, BCObjects.RED_RUM_TANKARD_BLOCK.getDefaultState());
-            map.put(BCObjects.RICE_WINE, BCObjects.RICE_WINE_TANKARD_BLOCK.getDefaultState());
-            map.put(BCObjects.SACCHARINE_RUM, BCObjects.SACCHARINE_RUM_TANKARD_BLOCK.getDefaultState());
-            map.put(BCObjects.SALTY_FOLLY, BCObjects.SALTY_FOLLY_TANKARD_BLOCK.getDefaultState());
-            map.put(BCObjects.STEEL_TOE_STOUT, BCObjects.STEEL_TOE_STOUT_TANKARD_BLOCK.getDefaultState());
-            map.put(BCObjects.STRONGROOT_ALE, BCObjects.STRONGROT_ALE_TANKARD_BLOCK.getDefaultState());
+            map.put(BCObjects.BEER, BCObjects.BEER_TANKARD_BLOCK.defaultBlockState());
+            map.put(BCObjects.BLOODY_MARY, BCObjects.BLOODY_MARY_TANKARD_BLOCK.defaultBlockState());
+            map.put(BCObjects.EGG_GROG, BCObjects.EGG_GROG_TANKARD_BLOCK.defaultBlockState());
+            map.put(BCObjects.GLITTERING_GRENADINE, BCObjects.GLITTERING_GRENADINE_TANKARD_BLOCK.defaultBlockState());
+            map.put(BCObjects.MEAD, BCObjects.MEAD_TANKARD_BLOCK.defaultBlockState());
+            map.put(BCObjects.PALE_JANE, BCObjects.PALE_JANE_TANKARD_BLOCK.defaultBlockState());
+            map.put(BCObjects.RED_RUM, BCObjects.RED_RUM_TANKARD_BLOCK.defaultBlockState());
+            map.put(BCObjects.RICE_WINE, BCObjects.RICE_WINE_TANKARD_BLOCK.defaultBlockState());
+            map.put(BCObjects.SACCHARINE_RUM, BCObjects.SACCHARINE_RUM_TANKARD_BLOCK.defaultBlockState());
+            map.put(BCObjects.SALTY_FOLLY, BCObjects.SALTY_FOLLY_TANKARD_BLOCK.defaultBlockState());
+            map.put(BCObjects.STEEL_TOE_STOUT, BCObjects.STEEL_TOE_STOUT_TANKARD_BLOCK.defaultBlockState());
+            map.put(BCObjects.STRONGROOT_ALE, BCObjects.STRONGROT_ALE_TANKARD_BLOCK.defaultBlockState());
 
-            map.put(BCObjects.WITHERING_DROSS, BCObjects.WITHERING_DROSS_TANKARD_BLOCK.getDefaultState());
-            map.put(BCObjects.KOMBUCHA, BCObjects.KOMBUCHA_TANKARD_BLOCK.getDefaultState());
-            map.put(BCObjects.VODKA, BCObjects.VODKA_TANKARD_BLOCK.getDefaultState());
-            map.put(BCObjects.DREAD_NOG, BCObjects.DREAD_NOG_TANKARD_BLOCK.getDefaultState());
+            map.put(BCObjects.WITHERING_DROSS, BCObjects.WITHERING_DROSS_TANKARD_BLOCK.defaultBlockState());
+            map.put(BCObjects.KOMBUCHA, BCObjects.KOMBUCHA_TANKARD_BLOCK.defaultBlockState());
+            map.put(BCObjects.VODKA, BCObjects.VODKA_TANKARD_BLOCK.defaultBlockState());
+            map.put(BCObjects.DREAD_NOG, BCObjects.DREAD_NOG_TANKARD_BLOCK.defaultBlockState());
         });
     }
 
-    public TankardBlockEntityRenderer(BlockEntityRendererFactory.Context ctx) {
-        this.blockRenderer = ctx.getRenderManager();
+    public TankardBlockEntityRenderer(BlockEntityRendererProvider.Context ctx) {
+        this.blockRenderer = ctx.getBlockRenderDispatcher();
     }
 
     @Override
-    public void render(TankardBlockEntity entity, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay) {
-        if (entity.getWorld() == null) {
+    public void render(TankardBlockEntity entity, float tickDelta, PoseStack matrices, MultiBufferSource vertexConsumers, int light, int overlay) {
+        if (entity.getLevel() == null) {
             return;
         }
         float[] x = {0};
@@ -80,24 +79,24 @@ public class TankardBlockEntityRenderer implements BlockEntityRenderer<TankardBl
             rot = new int[]{0, 90, 180};
         }
 
-        matrices.push();
+        matrices.pushPose();
 
         for (int i = 0; i < entity.getItems().size(); i++) {
             ItemStack itemStack = entity.getItems().get(i);
             if (itemBlockStateMap().containsKey(itemStack.getItem())) {
-                matrices.push();
+                matrices.pushPose();
                 matrices.translate(0.5, 0, 0.5);
-                matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(rot[i]));
-                float rotation = RotationPropertyHelper.toDegrees(entity.getCachedState().get(TankardBlock.ROTATION));
-                matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-rotation));
+                matrices.mulPose(Axis.YP.rotationDegrees(rot[i]));
+                float rotation = RotationSegment.convertToDegrees(entity.getBlockState().getValue(TankardBlock.ROTATION));
+                matrices.mulPose(Axis.YP.rotationDegrees(-rotation));
                 matrices.translate(-0.5, 0, -0.5);
 
                 matrices.translate(x[i] / 2, 0, z[i] / 2);
-                blockRenderer.renderBlock(itemBlockStateMap().get(itemStack.getItem()), entity.getPos(), entity.getWorld(), matrices, vertexConsumers.getBuffer(RenderLayer.getCutout()), true, entity.getWorld().getRandom());
-                matrices.pop();
+                blockRenderer.renderBatched(itemBlockStateMap().get(itemStack.getItem()), entity.getBlockPos(), entity.getLevel(), matrices, vertexConsumers.getBuffer(RenderType.cutout()), true, entity.getLevel().getRandom());
+                matrices.popPose();
             }
         }
 
-        matrices.pop();
+        matrices.popPose();
     }
 }

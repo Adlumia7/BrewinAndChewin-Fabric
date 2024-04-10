@@ -1,95 +1,95 @@
 package dev.sterner.brewinandchewin.common.registry;
 
-import com.nhoryzon.mc.farmersdelight.registry.EffectsRegistry;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.item.FoodComponent;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.food.FoodProperties;
+import vectorwing.farmersdelight.common.registry.ModEffects;
 
 public interface BCFoodComponents {
-    FoodComponent MEAD = new FoodComponent.Builder()
-            .hunger(6).saturationModifier(0.1F)
-            .statusEffect(new StatusEffectInstance(BCStatusEffects.SWEET_HEART, 6000, 0), 1.0F).build();
-    FoodComponent RICE_WINE = new FoodComponent.Builder()
-            .statusEffect(new StatusEffectInstance(BCStatusEffects.SATISFACTION, 6000, 0), 1.0F).build();
-    FoodComponent EGG_GROG = new FoodComponent.Builder()
-            .statusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 3600, 0), 1.0F).build();
-    FoodComponent STRONGROOT_ALE = new FoodComponent.Builder()
-            .statusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 6000, 0), 1.0F).build();
-    FoodComponent SACCHARINE_RUM = new FoodComponent.Builder()
-            .hunger(6).saturationModifier(0.1F)
-            .statusEffect(new StatusEffectInstance(BCStatusEffects.SWEET_HEART, 9600, 1), 1.0F).build();
-    FoodComponent PALE_JANE = new FoodComponent.Builder()
-            .statusEffect(new StatusEffectInstance(BCStatusEffects.SATISFACTION, 9600, 1), 1.0F).build();
-    FoodComponent SALTY_FOLLY = new FoodComponent.Builder()
-            .statusEffect(new StatusEffectInstance(StatusEffects.WATER_BREATHING, 9600, 0), 1.0F).build();
-    FoodComponent STEEL_TOE_STOUT = new FoodComponent.Builder()
-            .statusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 12000, 1), 1.0F).build();
-    FoodComponent GLITTERING_GRENADINE = new FoodComponent.Builder()
-            .statusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 12000, 0), 1.0F)
-            .statusEffect(new StatusEffectInstance(StatusEffects.NIGHT_VISION, 12000, 0), 1.0F).build();
-    FoodComponent BLOODY_MARY = new FoodComponent.Builder()
-            .statusEffect(new StatusEffectInstance(EffectsRegistry.COMFORT.get(), 6000, 0), 1.0F).build();
-    FoodComponent RED_RUM = new FoodComponent.Builder()
-            .statusEffect(new StatusEffectInstance(EffectsRegistry.COMFORT.get(), 9600, 1), 1.0F).build();
-    FoodComponent WITHERING_DROSS = new FoodComponent.Builder()
-            .statusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 12000, 0), 0.5F)
-            .statusEffect(new StatusEffectInstance(StatusEffects.WEAKNESS, 12000, 0), 0.5F)
-            .statusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 12000, 0), 0.5F)
-            .statusEffect(new StatusEffectInstance(StatusEffects.WITHER, 12000, 0), 1.0F).build();
-    FoodComponent KOMBUHCA = new FoodComponent.Builder()
-            .statusEffect(new StatusEffectInstance(BCStatusEffects.SATISFACTION, 3600, 0), 1.0F)
-            .statusEffect(new StatusEffectInstance(StatusEffects.HASTE, 6000, 0), 1.0F).build();
+    FoodProperties MEAD = new FoodProperties.Builder()
+            .nutrition(6).saturationMod(0.1F)
+            .effect(new MobEffectInstance(BCStatusEffects.SWEET_HEART, 6000, 0), 1.0F).build();
+    FoodProperties RICE_WINE = new FoodProperties.Builder()
+            .effect(new MobEffectInstance(BCStatusEffects.SATISFACTION, 6000, 0), 1.0F).build();
+    FoodProperties EGG_GROG = new FoodProperties.Builder()
+            .effect(new MobEffectInstance(MobEffects.ABSORPTION, 3600, 0), 1.0F).build();
+    FoodProperties STRONGROOT_ALE = new FoodProperties.Builder()
+            .effect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 6000, 0), 1.0F).build();
+    FoodProperties SACCHARINE_RUM = new FoodProperties.Builder()
+            .nutrition(6).saturationMod(0.1F)
+            .effect(new MobEffectInstance(BCStatusEffects.SWEET_HEART, 9600, 1), 1.0F).build();
+    FoodProperties PALE_JANE = new FoodProperties.Builder()
+            .effect(new MobEffectInstance(BCStatusEffects.SATISFACTION, 9600, 1), 1.0F).build();
+    FoodProperties SALTY_FOLLY = new FoodProperties.Builder()
+            .effect(new MobEffectInstance(MobEffects.WATER_BREATHING, 9600, 0), 1.0F).build();
+    FoodProperties STEEL_TOE_STOUT = new FoodProperties.Builder()
+            .effect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 12000, 1), 1.0F).build();
+    FoodProperties GLITTERING_GRENADINE = new FoodProperties.Builder()
+            .effect(new MobEffectInstance(MobEffects.GLOWING, 12000, 0), 1.0F)
+            .effect(new MobEffectInstance(MobEffects.NIGHT_VISION, 12000, 0), 1.0F).build();
+    FoodProperties BLOODY_MARY = new FoodProperties.Builder()
+            .effect(new MobEffectInstance(ModEffects.COMFORT.get(), 6000, 0), 1.0F).build();
+    FoodProperties RED_RUM = new FoodProperties.Builder()
+            .effect(new MobEffectInstance(ModEffects.COMFORT.get(), 9600, 1), 1.0F).build();
+    FoodProperties WITHERING_DROSS = new FoodProperties.Builder()
+            .effect(new MobEffectInstance(MobEffects.BLINDNESS, 12000, 0), 0.5F)
+            .effect(new MobEffectInstance(MobEffects.WEAKNESS, 12000, 0), 0.5F)
+            .effect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 12000, 0), 0.5F)
+            .effect(new MobEffectInstance(MobEffects.WITHER, 12000, 0), 1.0F).build();
+    FoodProperties KOMBUHCA = new FoodProperties.Builder()
+            .effect(new MobEffectInstance(BCStatusEffects.SATISFACTION, 3600, 0), 1.0F)
+            .effect(new MobEffectInstance(MobEffects.DIG_SPEED, 6000, 0), 1.0F).build();
 
 
-    FoodComponent KIMCHI = new FoodComponent.Builder()
-            .hunger(2).saturationModifier(0.6F)
-            .statusEffect(new StatusEffectInstance(BCStatusEffects.SATISFACTION, 2400, 0), 1.0F).build();
-    FoodComponent JERKY = new FoodComponent.Builder()
-            .hunger(3).saturationModifier(0.7F).snack().build();
-    FoodComponent PICKLED_PICKLES = new FoodComponent.Builder()
-            .hunger(4).saturationModifier(0.3F)
-            .statusEffect(new StatusEffectInstance(StatusEffects.NIGHT_VISION, 2400, 0), 1.0F)
-            .statusEffect(new StatusEffectInstance(StatusEffects.LUCK, 6000, 0), 1.0F).build();
-    FoodComponent KIPPERS = new FoodComponent.Builder()
-            .hunger(6).saturationModifier(0.5F)
-            .statusEffect(new StatusEffectInstance(StatusEffects.WATER_BREATHING, 600, 0), 1.0F).build();
-    FoodComponent COCOA_FUDGE = new FoodComponent.Builder()
-            .hunger(4).saturationModifier(0.8F)
-            .statusEffect(new StatusEffectInstance(StatusEffects.SPEED, 400, 0), 1.0F).build();
+    FoodProperties KIMCHI = new FoodProperties.Builder()
+            .nutrition(2).saturationMod(0.6F)
+            .effect(new MobEffectInstance(BCStatusEffects.SATISFACTION, 2400, 0), 1.0F).build();
+    FoodProperties JERKY = new FoodProperties.Builder()
+            .nutrition(3).saturationMod(0.7F).fast().build();
+    FoodProperties PICKLED_PICKLES = new FoodProperties.Builder()
+            .nutrition(4).saturationMod(0.3F)
+            .effect(new MobEffectInstance(MobEffects.NIGHT_VISION, 2400, 0), 1.0F)
+            .effect(new MobEffectInstance(MobEffects.LUCK, 6000, 0), 1.0F).build();
+    FoodProperties KIPPERS = new FoodProperties.Builder()
+            .nutrition(6).saturationMod(0.5F)
+            .effect(new MobEffectInstance(MobEffects.WATER_BREATHING, 600, 0), 1.0F).build();
+    FoodProperties COCOA_FUDGE = new FoodProperties.Builder()
+            .nutrition(4).saturationMod(0.8F)
+            .effect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 400, 0), 1.0F).build();
 
-    FoodComponent FLAXEN_CHEESE = new FoodComponent.Builder()
-            .hunger(4).saturationModifier(1.0F).build();
-    FoodComponent SCARLET_CHEESE = new FoodComponent.Builder()
-            .hunger(4).saturationModifier(1.0F).build();
+    FoodProperties FLAXEN_CHEESE = new FoodProperties.Builder()
+            .nutrition(4).saturationMod(1.0F).build();
+    FoodProperties SCARLET_CHEESE = new FoodProperties.Builder()
+            .nutrition(4).saturationMod(1.0F).build();
 
-    FoodComponent PIZZA_SLICE = new FoodComponent.Builder()
-            .hunger(3).saturationModifier(1.0F).build();
-    FoodComponent HAM_AND_CHEESE_SANDWICH = new FoodComponent.Builder()
-            .hunger(9).saturationModifier(1.0F).build();
+    FoodProperties PIZZA_SLICE = new FoodProperties.Builder()
+            .nutrition(3).saturationMod(1.0F).build();
+    FoodProperties HAM_AND_CHEESE_SANDWICH = new FoodProperties.Builder()
+            .nutrition(9).saturationMod(1.0F).build();
 
     //Bowl Foods
 
-    FoodComponent QUICHE_SLICE = new FoodComponent.Builder()
-            .hunger(3).saturationModifier(0.8F).snack().build();
-    FoodComponent FIERY_FONDUE = new FoodComponent.Builder()
-            .hunger(16).saturationModifier(1.0F)
-            .statusEffect(new StatusEffectInstance(EffectsRegistry.NOURISHMENT.get(), 7200, 0), 1.0F).build();
+    FoodProperties QUICHE_SLICE = new FoodProperties.Builder()
+            .nutrition(3).saturationMod(0.8F).fast().build();
+    FoodProperties FIERY_FONDUE = new FoodProperties.Builder()
+            .nutrition(16).saturationMod(1.0F)
+            .effect(new MobEffectInstance(ModEffects.NOURISHMENT.get(), 7200, 0), 1.0F).build();
 
-    FoodComponent VEGETABLE_OMELET = new FoodComponent.Builder()
-            .hunger(12).saturationModifier(0.75F)
-            .statusEffect(new StatusEffectInstance(EffectsRegistry.NOURISHMENT.get(), 4800, 0), 1.0F).build();
-    FoodComponent CHEESY_PASTA = new FoodComponent.Builder()
-            .hunger(12).saturationModifier(0.8F)
-            .statusEffect(new StatusEffectInstance(EffectsRegistry.NOURISHMENT.get(), 4800, 0), 1.0F).build();
+    FoodProperties VEGETABLE_OMELET = new FoodProperties.Builder()
+            .nutrition(12).saturationMod(0.75F)
+            .effect(new MobEffectInstance(ModEffects.NOURISHMENT.get(), 4800, 0), 1.0F).build();
+    FoodProperties CHEESY_PASTA = new FoodProperties.Builder()
+            .nutrition(12).saturationMod(0.8F)
+            .effect(new MobEffectInstance(ModEffects.NOURISHMENT.get(), 4800, 0), 1.0F).build();
 
-    FoodComponent CREAMY_ONION_SOUP = new FoodComponent.Builder()
-            .hunger(12).saturationModifier(0.75F)
-            .statusEffect(new StatusEffectInstance(EffectsRegistry.COMFORT.get(), 4800, 0), 1.0F).build();
+    FoodProperties CREAMY_ONION_SOUP = new FoodProperties.Builder()
+            .nutrition(12).saturationMod(0.75F)
+            .effect(new MobEffectInstance(ModEffects.COMFORT.get(), 4800, 0), 1.0F).build();
 
-    FoodComponent SCARLET_PIEROGIES = new FoodComponent.Builder()
-            .hunger(14).saturationModifier(0.75F)
-            .statusEffect(new StatusEffectInstance(EffectsRegistry.NOURISHMENT.get(), 4800, 0), 1.0F).build();
-    FoodComponent HORROR_LASAGNA = new FoodComponent.Builder()
-            .hunger(14).saturationModifier(0.75F)
-            .statusEffect(new StatusEffectInstance(EffectsRegistry.NOURISHMENT.get(), 7200, 0), 1.0F).build();
+    FoodProperties SCARLET_PIEROGIES = new FoodProperties.Builder()
+            .nutrition(14).saturationMod(0.75F)
+            .effect(new MobEffectInstance(ModEffects.NOURISHMENT.get(), 4800, 0), 1.0F).build();
+    FoodProperties HORROR_LASAGNA = new FoodProperties.Builder()
+            .nutrition(14).saturationMod(0.75F)
+            .effect(new MobEffectInstance(ModEffects.NOURISHMENT.get(), 7200, 0), 1.0F).build();
 }

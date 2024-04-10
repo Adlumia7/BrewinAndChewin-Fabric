@@ -1,17 +1,17 @@
 package dev.sterner.brewinandchewin.datagen;
 
-import com.nhoryzon.mc.farmersdelight.registry.ItemsRegistry;
 import dev.sterner.brewinandchewin.common.registry.BCObjects;
 import dev.sterner.brewinandchewin.common.registry.BCTags;
 import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricRecipeProvider;
-import net.minecraft.advancement.criterion.InventoryChangedCriterion;
-import net.minecraft.data.server.recipe.RecipeJsonProvider;
-import net.minecraft.data.server.recipe.ShapedRecipeJsonBuilder;
-import net.minecraft.data.server.recipe.ShapelessRecipeJsonBuilder;
-import net.minecraft.item.Items;
-import net.minecraft.recipe.book.RecipeCategory;
-import net.minecraft.registry.tag.ItemTags;
+import net.minecraft.advancements.critereon.InventoryChangeTrigger;
+import net.minecraft.data.recipes.FinishedRecipe;
+import net.minecraft.data.recipes.RecipeCategory;
+import net.minecraft.data.recipes.ShapedRecipeBuilder;
+import net.minecraft.data.recipes.ShapelessRecipeBuilder;
+import net.minecraft.tags.ItemTags;
+import net.minecraft.world.item.Items;
+import vectorwing.farmersdelight.common.registry.ModItems;
 
 import java.util.function.Consumer;
 
@@ -22,7 +22,7 @@ public class BCRecipeProvider extends FabricRecipeProvider {
         super(output);
     }
 
-    protected void generateRecipes(Consumer<RecipeJsonProvider> exporter) {
+    protected void generateRecipes(Consumer<FinishedRecipe> exporter) {
 
         //Brews
         BCKegRecipeBuilder.kegRecipe(BCObjects.BEER, 1, FERMENTING_TIME, 0.6F, BCObjects.TANKARD, Items.WATER_BUCKET, 3)
@@ -42,15 +42,15 @@ public class BCRecipeProvider extends FabricRecipeProvider {
                 .addIngredient(Items.SWEET_BERRIES)
                 .build(exporter);
         BCKegRecipeBuilder.kegRecipe(BCObjects.RICE_WINE, 1, FERMENTING_TIME, 0.6F, BCObjects.TANKARD, Items.WATER_BUCKET, 3)
-                .addIngredient(ItemsRegistry.RICE.get())
-                .addIngredient(ItemsRegistry.RICE.get())
-                .addIngredient(ItemsRegistry.RICE.get())
-                .addIngredient(ItemsRegistry.RICE.get())
+                .addIngredient(ModItems.RICE.get())
+                .addIngredient(ModItems.RICE.get())
+                .addIngredient(ModItems.RICE.get())
+                .addIngredient(ModItems.RICE.get())
                 .build(exporter);
         BCKegRecipeBuilder.kegRecipe(BCObjects.EGG_GROG, 1, FERMENTING_TIME, 0.6F, BCObjects.TANKARD, Items.MILK_BUCKET, 3)
                 .addIngredient(Items.EGG)
                 .addIngredient(Items.EGG)
-                .addIngredient(ItemsRegistry.CABBAGE_LEAF.get())
+                .addIngredient(ModItems.CABBAGE_LEAF.get())
                 .addIngredient(Items.SUGAR)
                 .build(exporter);
         BCKegRecipeBuilder.kegRecipe(BCObjects.STRONGROOT_ALE, 1, FERMENTING_TIME, 0.6F, BCObjects.TANKARD, BCObjects.BEER, 3)
@@ -67,7 +67,7 @@ public class BCRecipeProvider extends FabricRecipeProvider {
                 .build(exporter);
         BCKegRecipeBuilder.kegRecipe(BCObjects.PALE_JANE, 1, FERMENTING_TIME, 0.6F, BCObjects.TANKARD, BCObjects.RICE_WINE, 4)
                 .addIngredient(Items.HONEY_BOTTLE)
-                .addIngredient(ItemsRegistry.TREE_BARK.get())
+                .addIngredient(ModItems.TREE_BARK.get())
                 .addIngredient(Items.LILY_OF_THE_VALLEY)
                 .addIngredient(Items.SUGAR)
                 .build(exporter);
@@ -96,9 +96,9 @@ public class BCRecipeProvider extends FabricRecipeProvider {
                 .addIngredient(Items.GLOW_BERRIES)
                 .build(exporter);
         BCKegRecipeBuilder.kegRecipe(BCObjects.BLOODY_MARY, 1, FERMENTING_TIME, 0.6F, BCObjects.TANKARD, BCObjects.VODKA, 4)
-                .addIngredient(ItemsRegistry.TOMATO.get())
-                .addIngredient(ItemsRegistry.TOMATO.get())
-                .addIngredient(ItemsRegistry.CABBAGE_LEAF.get())
+                .addIngredient(ModItems.TOMATO.get())
+                .addIngredient(ModItems.TOMATO.get())
+                .addIngredient(ModItems.CABBAGE_LEAF.get())
                 .addIngredient(Items.SWEET_BERRIES)
                 .build(exporter);
         BCKegRecipeBuilder.kegRecipe(BCObjects.RED_RUM, 1, FERMENTING_TIME, 0.6F, BCObjects.TANKARD, BCObjects.BLOODY_MARY, 5)
@@ -114,7 +114,7 @@ public class BCRecipeProvider extends FabricRecipeProvider {
                 .addIngredient(Items.BONE)
                 .build(exporter);
         BCKegRecipeBuilder.kegRecipe(BCObjects.KIMCHI, 2, FERMENTING_TIME, 0.6F, 3)
-                .addIngredient(ItemsRegistry.CABBAGE_LEAF.get())
+                .addIngredient(ModItems.CABBAGE_LEAF.get())
                 .addIngredient(BCTags.VEGETABLES)
                 .addIngredient(Items.KELP)
                 .build(exporter);
@@ -151,61 +151,61 @@ public class BCRecipeProvider extends FabricRecipeProvider {
                 .addIngredient(Items.SUGAR)
                 .build(exporter);
 
-        ShapelessRecipeJsonBuilder.create(RecipeCategory.FOOD, BCObjects.HAM_AND_CHEESE_SANDWICH, 2)
-                .input(Items.BREAD)
-                .input(ItemsRegistry.SMOKED_HAM.get())
-                .input(BCObjects.FLAXEN_CHEESE_WEDGE)
-                .input(Items.BREAD)
-                .criterion("has_cheese", InventoryChangedCriterion.Conditions.items(BCObjects.FLAXEN_CHEESE_WEDGE))
-                .offerTo(exporter);
+        ShapelessRecipeBuilder.shapeless(RecipeCategory.FOOD, BCObjects.HAM_AND_CHEESE_SANDWICH, 2)
+                .requires(Items.BREAD)
+                .requires(ModItems.SMOKED_HAM.get())
+                .requires(BCObjects.FLAXEN_CHEESE_WEDGE)
+                .requires(Items.BREAD)
+                .unlockedBy("has_cheese", InventoryChangeTrigger.TriggerInstance.hasItems(BCObjects.FLAXEN_CHEESE_WEDGE))
+                .save(exporter);
         //Crafting
-        ShapedRecipeJsonBuilder.create(RecipeCategory.FOOD, BCObjects.PIZZA)
+        ShapedRecipeBuilder.shaped(RecipeCategory.FOOD, BCObjects.PIZZA)
                 .pattern("fff")
                 .pattern("mtp")
                 .pattern("www")
-                .input('w', Items.WHEAT)
-                .input('m', Items.BROWN_MUSHROOM)
-                .input('t', ItemsRegistry.TOMATO.get())
-                .input('p', ItemsRegistry.BEEF_PATTY.get())
-                .input('f', BCObjects.FLAXEN_CHEESE_WEDGE)
-                .criterion("has_cheese", InventoryChangedCriterion.Conditions.items(BCObjects.FLAXEN_CHEESE_WEDGE))
-                .offerTo(exporter);
+                .define('w', Items.WHEAT)
+                .define('m', Items.BROWN_MUSHROOM)
+                .define('t', ModItems.TOMATO.get())
+                .define('p', ModItems.BEEF_PATTY.get())
+                .define('f', BCObjects.FLAXEN_CHEESE_WEDGE)
+                .unlockedBy("has_cheese", InventoryChangeTrigger.TriggerInstance.hasItems(BCObjects.FLAXEN_CHEESE_WEDGE))
+                .save(exporter);
 
-        ShapedRecipeJsonBuilder.create(RecipeCategory.FOOD, BCObjects.KEG)
+        ShapedRecipeBuilder.shaped(RecipeCategory.FOOD, BCObjects.KEG)
                 .pattern("ipi")
                 .pattern("ihi")
                 .pattern("ppp")
-                .input('i', Items.IRON_INGOT)
-                .input('h', Items.HONEYCOMB)
-                .input('p', ItemTags.PLANKS)
-                .criterion("has_honeycomb", InventoryChangedCriterion.Conditions.items(Items.HONEYCOMB))
-                .offerTo(exporter);
+                .define('i', Items.IRON_INGOT)
+                .define('h', Items.HONEYCOMB)
+                .define('p', ItemTags.PLANKS)
+                .unlockedBy("has_honeycomb", InventoryChangeTrigger.TriggerInstance.hasItems(Items.HONEYCOMB))
+                .save(exporter);
 
-        ShapedRecipeJsonBuilder.create(RecipeCategory.FOOD, BCObjects.TANKARD, 4)
+        ShapedRecipeBuilder.shaped(RecipeCategory.FOOD, BCObjects.TANKARD, 4)
                 .pattern("p p")
                 .pattern("i i")
                 .pattern("ppp")
-                .input('i', Items.IRON_NUGGET)
-                .input('p', ItemTags.PLANKS)
-                .criterion("has_nugget", InventoryChangedCriterion.Conditions.items(Items.IRON_NUGGET))
-                .offerTo(exporter);
+                .define('i', Items.IRON_NUGGET)
+                .define('p', ItemTags.PLANKS)
+                .unlockedBy("has_nugget", InventoryChangeTrigger.TriggerInstance.hasItems(Items.IRON_NUGGET))
+                .save(exporter);
 
-        ShapedRecipeJsonBuilder.create(RecipeCategory.REDSTONE, BCObjects.FERMENTATION_CONTROLLER, 1)
+        ShapedRecipeBuilder.shaped(RecipeCategory.REDSTONE, BCObjects.FERMENTATION_CONTROLLER, 1)
                 .pattern("III")
                 .pattern("SAN")
                 .pattern("BRB")
-                .input('I', Items.IRON_INGOT)
-                .input('S', Items.SOUL_SOIL)
-                .input('A', Items.AMETHYST_SHARD)
-                .input('N', Items.NETHERRACK)
-                .input('B', Items.BRICKS)
-                .input('R', Items.REDSTONE)
-                .criterion("has_amethyst", InventoryChangedCriterion.Conditions.items(Items.AMETHYST_SHARD))
-                .offerTo(exporter);
+                .define('I', Items.IRON_INGOT)
+                .define('S', Items.SOUL_SOIL)
+                .define('A', Items.AMETHYST_SHARD)
+                .define('N', Items.NETHERRACK)
+                .define('B', Items.BRICKS)
+                .define('R', Items.REDSTONE)
+                .unlockedBy("has_amethyst", InventoryChangeTrigger.TriggerInstance.hasItems(Items.AMETHYST_SHARD))
+                .save(exporter);
     }
 
     @Override
-    public void generate(Consumer<RecipeJsonProvider> exporter) {
+    public void buildRecipes(Consumer<FinishedRecipe> exporter) {
         generateRecipes(exporter);
     }
 }

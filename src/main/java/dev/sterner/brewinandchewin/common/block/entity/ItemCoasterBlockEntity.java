@@ -1,46 +1,58 @@
 package dev.sterner.brewinandchewin.common.block.entity;
 
-import com.nhoryzon.mc.farmersdelight.entity.block.SyncedBlockEntity;
-import com.nhoryzon.mc.farmersdelight.entity.block.inventory.ItemStackInventory;
 import dev.sterner.brewinandchewin.common.registry.BCBlockEntityTypes;
-import net.minecraft.block.BlockState;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.listener.ClientPlayPacketListener;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
-import net.minecraft.util.collection.DefaultedList;
-import net.minecraft.util.math.BlockPos;
+import io.github.fabricators_of_create.porting_lib.transfer.item.ItemStackHandlerContainer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
+import vectorwing.farmersdelight.common.block.entity.SyncedBlockEntity;
 
-public class ItemCoasterBlockEntity extends SyncedBlockEntity implements ItemStackInventory {
+public class ItemCoasterBlockEntity extends SyncedBlockEntity {
 
-    private final DefaultedList<ItemStack> inventory;
+    private final ItemStackHandlerContainer inventory;
 
     private boolean isItemCarvingBoard = false;
 
     public ItemCoasterBlockEntity(BlockPos pos, BlockState state) {
         super(BCBlockEntityTypes.COASTER, pos, state);
-        this.inventory = DefaultedList.ofSize(1, ItemStack.EMPTY);
+        this.inventory = createHandler();
+    }
+
+    private ItemStackHandlerContainer createHandler() {
+        return new ItemStackHandlerContainer()
+        {
+            @Override
+            public int getSlotLimit(int slot) {
+                return 1;
+            }
+
+            @Override
+            protected void onContentsChanged(int slot) {
+                inventoryChanged();
+            }
+        };
     }
 
     @Override
-    public void readNbt(NbtCompound tag) {
-        super.readNbt(tag);
+    public void load(CompoundTag tag) {
+        super.load(tag);
         this.isItemCarvingBoard = tag.getBoolean("IsItemCarved");
-        readInventoryNbt(tag);
+        inventory.deserializeNBT(tag.getCompound("Inventory"));
     }
 
     @Override
-    public void writeNbt(NbtCompound tag) {
-        super.writeNbt(tag);
-        writeInventoryNbt(tag);
+    public void saveAdditional(CompoundTag tag) {
+        super.saveAdditional(tag);
+        tag.put("Inventory", inventory.serializeNBT());
         tag.putBoolean("IsItemCarved", this.isItemCarvingBoard);
     }
 
     public boolean addItem(ItemStack itemStack) {
         if (this.isEmpty() && !itemStack.isEmpty()) {
-            this.setStack(0, itemStack.split(1));
+            this.inventory.setItem(0, itemStack.split(1));
             this.isItemCarvingBoard = false;
             this.inventoryChanged();
             return true;
@@ -70,16 +82,11 @@ public class ItemCoasterBlockEntity extends SyncedBlockEntity implements ItemSta
     }
 
     public ItemStack getStoredItem() {
-        return this.getStack(0);
-    }
-
-    @Override
-    public DefaultedList<ItemStack> getItems() {
-        return inventory;
+        return this.inventory.getItem(0);
     }
 
     public boolean isEmpty() {
-        return this.getStack(0).isEmpty();
+        return this.inventory.getItem(0).isEmpty();
     }
 
     public boolean isItemCarvingBoard() {
@@ -87,14 +94,14 @@ public class ItemCoasterBlockEntity extends SyncedBlockEntity implements ItemSta
     }
 
     @Override
-    public @Nullable Packet<ClientPlayPacketListener> toUpdatePacket() {
-        return BlockEntityUpdateS2CPacket.create(this);
+    public @Nullable ClientboundBlockEntityDataPacket getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
     }
 
     @Override
-    public NbtCompound toInitialChunkDataNbt() {
-        NbtCompound nbt = new NbtCompound();
-        this.writeNbt(nbt);
+    public CompoundTag getUpdateTag() {
+        CompoundTag nbt = new CompoundTag();
+        this.saveAdditional(nbt);
         return nbt;
     }
 }

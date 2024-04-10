@@ -1,29 +1,29 @@
 package dev.sterner.brewinandchewin.common.item;
 
-import net.minecraft.advancement.criterion.Criteria;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.ShapeContext;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.client.item.TooltipContext;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemUsageContext;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.resource.featuretoggle.FeatureSet;
+import net.minecraft.advancements.CriteriaTriggers;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.sound.BlockSoundGroup;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.state.StateManager;
-import net.minecraft.state.property.Property;
-import net.minecraft.text.Text;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
-import net.minecraft.world.event.GameEvent;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.flag.FeatureFlagSet;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.Property;
+import net.minecraft.world.level.gameevent.GameEvent;
+import net.minecraft.world.phys.shapes.CollisionContext;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -32,147 +32,147 @@ import java.util.List;
 public class BoozeBlockItem extends BoozeItem {
     private final Block block;
 
-    public BoozeBlockItem(Block block, int potency, int duration, Settings settings) {
+    public BoozeBlockItem(Block block, int potency, int duration, Properties settings) {
         super(potency, duration, settings);
         this.block = block;
     }
 
     @Override
-    public ActionResult useOnBlock(ItemUsageContext context) {
+    public InteractionResult useOn(UseOnContext context) {
 
-        World world = context.getWorld();
-        BlockPos pos = context.getBlockPos();
+        Level world = context.getLevel();
+        BlockPos pos = context.getClickedPos();
         BlockState blockState = world.getBlockState(pos);
 
-        if (blockState.isOf(this.block)) {
-            return ActionResult.CONSUME;
+        if (blockState.is(this.block)) {
+            return InteractionResult.CONSUME;
         }
 
-        ActionResult actionResult = this.place(new ItemPlacementContext(context));
-        if (!actionResult.isAccepted() && this.isFood()) {
-            ActionResult actionResult2 = this.use(context.getWorld(), context.getPlayer(), context.getHand()).getResult();
-            return actionResult2 == ActionResult.CONSUME ? ActionResult.CONSUME_PARTIAL : actionResult2;
+        InteractionResult actionResult = this.place(new BlockPlaceContext(context));
+        if (!actionResult.consumesAction() && this.isEdible()) {
+            InteractionResult actionResult2 = this.use(context.getLevel(), context.getPlayer(), context.getHand()).getResult();
+            return actionResult2 == InteractionResult.CONSUME ? InteractionResult.CONSUME_PARTIAL : actionResult2;
         } else {
             return actionResult;
         }
     }
 
-    public ActionResult place(ItemPlacementContext itemPlacementContext) {
-        if (!this.getBlock().isEnabled(itemPlacementContext.getWorld().getEnabledFeatures())) {
-            return ActionResult.FAIL;
+    public InteractionResult place(BlockPlaceContext itemPlacementContext) {
+        if (!this.getBlock().isEnabled(itemPlacementContext.getLevel().enabledFeatures())) {
+            return InteractionResult.FAIL;
         } else if (!itemPlacementContext.canPlace()) {
-            return ActionResult.FAIL;
+            return InteractionResult.FAIL;
         } else {
             BlockState blockState = this.getPlacementState(itemPlacementContext);
             if (blockState == null) {
-                return ActionResult.FAIL;
+                return InteractionResult.FAIL;
             } else if (!this.place(itemPlacementContext, blockState)) {
-                return ActionResult.FAIL;
+                return InteractionResult.FAIL;
             } else {
-                BlockPos blockPos = itemPlacementContext.getBlockPos();
-                World world = itemPlacementContext.getWorld();
-                PlayerEntity playerEntity = itemPlacementContext.getPlayer();
-                ItemStack itemStack = itemPlacementContext.getStack();
+                BlockPos blockPos = itemPlacementContext.getClickedPos();
+                Level world = itemPlacementContext.getLevel();
+                Player playerEntity = itemPlacementContext.getPlayer();
+                ItemStack itemStack = itemPlacementContext.getItemInHand();
                 BlockState blockState2 = world.getBlockState(blockPos);
-                if (blockState2.isOf(blockState.getBlock())) {
+                if (blockState2.is(blockState.getBlock())) {
                     blockState2 = this.placeFromNbt(blockPos, world, itemStack, blockState2);
                     writeNbtToBlockEntity(world, playerEntity, blockPos, itemStack);
-                    blockState2.getBlock().onPlaced(world, blockPos, blockState2, playerEntity, itemStack);
-                    if (playerEntity instanceof ServerPlayerEntity) {
-                        Criteria.PLACED_BLOCK.trigger((ServerPlayerEntity) playerEntity, blockPos, itemStack);
+                    blockState2.getBlock().setPlacedBy(world, blockPos, blockState2, playerEntity, itemStack);
+                    if (playerEntity instanceof ServerPlayer) {
+                        CriteriaTriggers.PLACED_BLOCK.trigger((ServerPlayer) playerEntity, blockPos, itemStack);
                     }
                 }
 
-                BlockSoundGroup blockSoundGroup = blockState2.getSoundGroup();
+                SoundType blockSoundGroup = blockState2.getSoundType();
                 world.playSound(
                         playerEntity,
                         blockPos,
                         this.getPlaceSound(blockState2),
-                        SoundCategory.BLOCKS,
+                        SoundSource.BLOCKS,
                         (blockSoundGroup.getVolume() + 1.0F) / 2.0F,
                         blockSoundGroup.getPitch() * 0.8F
                 );
-                world.emitGameEvent(GameEvent.BLOCK_PLACE, blockPos, GameEvent.Emitter.of(playerEntity, blockState2));
-                if (playerEntity == null || !playerEntity.getAbilities().creativeMode) {
-                    itemStack.decrement(1);
+                world.gameEvent(GameEvent.BLOCK_PLACE, blockPos, GameEvent.Context.of(playerEntity, blockState2));
+                if (playerEntity == null || !playerEntity.getAbilities().instabuild) {
+                    itemStack.shrink(1);
                 }
 
-                return ActionResult.success(world.isClient);
+                return InteractionResult.sidedSuccess(world.isClientSide);
             }
         }
     }
 
     protected SoundEvent getPlaceSound(BlockState state) {
-        return state.getSoundGroup().getPlaceSound();
+        return state.getSoundType().getPlaceSound();
     }
 
     @Nullable
-    protected BlockState getPlacementState(ItemPlacementContext context) {
-        BlockState blockState = this.getBlock().getPlacementState(context);
+    protected BlockState getPlacementState(BlockPlaceContext context) {
+        BlockState blockState = this.getBlock().getStateForPlacement(context);
         return blockState != null && this.canPlace(context, blockState) ? blockState : null;
     }
 
-    private BlockState placeFromNbt(BlockPos pos, World world, ItemStack stack, BlockState state) {
+    private BlockState placeFromNbt(BlockPos pos, Level world, ItemStack stack, BlockState state) {
         BlockState blockState = state;
-        NbtCompound nbtCompound = stack.getNbt();
+        CompoundTag nbtCompound = stack.getTag();
         if (nbtCompound != null) {
-            NbtCompound nbtCompound2 = nbtCompound.getCompound("BlockStateTag");
-            StateManager<Block, BlockState> stateManager = state.getBlock().getStateManager();
+            CompoundTag nbtCompound2 = nbtCompound.getCompound("BlockStateTag");
+            StateDefinition<Block, BlockState> stateManager = state.getBlock().getStateDefinition();
 
-            for (String string : nbtCompound2.getKeys()) {
+            for (String string : nbtCompound2.getAllKeys()) {
                 Property<?> property = stateManager.getProperty(string);
                 if (property != null) {
-                    String string2 = nbtCompound2.get(string).asString();
+                    String string2 = nbtCompound2.get(string).getAsString();
                     blockState = with(blockState, property, string2);
                 }
             }
         }
 
         if (blockState != state) {
-            world.setBlockState(pos, blockState, Block.NOTIFY_LISTENERS);
+            world.setBlock(pos, blockState, Block.UPDATE_CLIENTS);
         }
 
         return blockState;
     }
 
     private static <T extends Comparable<T>> BlockState with(BlockState state, Property<T> property, String name) {
-        return property.parse(name).map(value -> state.with(property, value)).orElse(state);
+        return property.getValue(name).map(value -> state.setValue(property, value)).orElse(state);
     }
 
-    protected boolean canPlace(ItemPlacementContext context, BlockState state) {
-        PlayerEntity playerEntity = context.getPlayer();
-        ShapeContext shapeContext = playerEntity == null ? ShapeContext.absent() : ShapeContext.of(playerEntity);
-        return (!this.checkStatePlacement() || state.canPlaceAt(context.getWorld(), context.getBlockPos()))
-                && context.getWorld().canPlace(state, context.getBlockPos(), shapeContext);
+    protected boolean canPlace(BlockPlaceContext context, BlockState state) {
+        Player playerEntity = context.getPlayer();
+        CollisionContext shapeContext = playerEntity == null ? CollisionContext.empty() : CollisionContext.of(playerEntity);
+        return (!this.checkStatePlacement() || state.canSurvive(context.getLevel(), context.getClickedPos()))
+                && context.getLevel().isUnobstructed(state, context.getClickedPos(), shapeContext);
     }
 
     protected boolean checkStatePlacement() {
         return true;
     }
 
-    protected boolean place(ItemPlacementContext context, BlockState state) {
-        return context.getWorld().setBlockState(context.getBlockPos(), state, Block.NOTIFY_ALL | Block.REDRAW_ON_MAIN_THREAD);
+    protected boolean place(BlockPlaceContext context, BlockState state) {
+        return context.getLevel().setBlock(context.getClickedPos(), state, Block.UPDATE_ALL | Block.UPDATE_IMMEDIATE);
     }
 
-    public static boolean writeNbtToBlockEntity(World world, @Nullable PlayerEntity player, BlockPos pos, ItemStack stack) {
+    public static boolean writeNbtToBlockEntity(Level world, @Nullable Player player, BlockPos pos, ItemStack stack) {
         MinecraftServer minecraftServer = world.getServer();
         if (minecraftServer == null) {
             return false;
         } else {
-            NbtCompound nbtCompound = getBlockEntityNbt(stack);
+            CompoundTag nbtCompound = getBlockEntityNbt(stack);
             if (nbtCompound != null) {
                 BlockEntity blockEntity = world.getBlockEntity(pos);
                 if (blockEntity != null) {
-                    if (!world.isClient && blockEntity.copyItemDataRequiresOperator() && (player == null || !player.isCreativeLevelTwoOp())) {
+                    if (!world.isClientSide && blockEntity.onlyOpCanSetNbt() && (player == null || !player.canUseGameMasterBlocks())) {
                         return false;
                     }
 
-                    NbtCompound nbtCompound2 = blockEntity.createNbt();
-                    NbtCompound nbtCompound3 = nbtCompound2.copy();
-                    nbtCompound2.copyFrom(nbtCompound);
+                    CompoundTag nbtCompound2 = blockEntity.saveWithoutMetadata();
+                    CompoundTag nbtCompound3 = nbtCompound2.copy();
+                    nbtCompound2.merge(nbtCompound);
                     if (!nbtCompound2.equals(nbtCompound3)) {
-                        blockEntity.readNbt(nbtCompound2);
-                        blockEntity.markDirty();
+                        blockEntity.load(nbtCompound2);
+                        blockEntity.setChanged();
                         return true;
                     }
                 }
@@ -183,9 +183,9 @@ public class BoozeBlockItem extends BoozeItem {
     }
 
     @Override
-    public void appendTooltip(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext context) {
-        super.appendTooltip(stack, world, tooltip, context);
-        this.getBlock().appendTooltip(stack, world, tooltip, context);
+    public void appendHoverText(ItemStack stack, @Nullable Level world, List<Component> tooltip, TooltipFlag context) {
+        super.appendHoverText(stack, world, tooltip, context);
+        this.getBlock().appendHoverText(stack, world, tooltip, context);
     }
 
     public Block getBlock() {
@@ -193,12 +193,12 @@ public class BoozeBlockItem extends BoozeItem {
     }
 
     @Nullable
-    public static NbtCompound getBlockEntityNbt(ItemStack stack) {
-        return stack.getSubNbt("BlockEntityTag");
+    public static CompoundTag getBlockEntityNbt(ItemStack stack) {
+        return stack.getTagElement("BlockEntityTag");
     }
 
     @Override
-    public FeatureSet getRequiredFeatures() {
-        return this.getBlock().getRequiredFeatures();
+    public FeatureFlagSet requiredFeatures() {
+        return this.getBlock().requiredFeatures();
     }
 }

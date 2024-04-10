@@ -1,22 +1,21 @@
 package dev.sterner.brewinandchewin.common.registry;
 
 import dev.sterner.brewinandchewin.common.loot.CopyDrinkFunction;
-import net.minecraft.loot.function.ConditionalLootFunction;
-import net.minecraft.loot.function.LootFunction;
-import net.minecraft.loot.function.LootFunctionType;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-import net.minecraft.util.Identifier;
-
 import java.util.function.Supplier;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.storage.loot.functions.LootItemConditionalFunction;
+import net.minecraft.world.level.storage.loot.functions.LootItemFunction;
+import net.minecraft.world.level.storage.loot.functions.LootItemFunctionType;
 
 public enum BCLootFunctionsRegistry {
     COPY_DRINK("copy_drink", CopyDrinkFunction.Serializer::new);
 
     private final String pathName;
-    private final Supplier<ConditionalLootFunction.Serializer<? extends LootFunction>> lootFunctionSerializerSupplier;
-    private ConditionalLootFunction.Serializer<? extends LootFunction> serializer;
-    private LootFunctionType type;
+    private final Supplier<LootItemConditionalFunction.Serializer<? extends LootItemFunction>> lootFunctionSerializerSupplier;
+    private LootItemConditionalFunction.Serializer<? extends LootItemFunction> serializer;
+    private LootItemFunctionType type;
 
     BCLootFunctionsRegistry(String pathName, Supplier lootFunctionSerializerSupplier) {
         this.pathName = pathName;
@@ -27,20 +26,20 @@ public enum BCLootFunctionsRegistry {
         BCLootFunctionsRegistry[] var0 = values();
 
         for (BCLootFunctionsRegistry value : var0) {
-            Registry.register(Registries.LOOT_FUNCTION_TYPE, new Identifier("brewinandchewin", value.pathName), value.type());
+            Registry.register(BuiltInRegistries.LOOT_FUNCTION_TYPE, new ResourceLocation("brewinandchewin", value.pathName), value.type());
         }
 
     }
 
-    public LootFunctionType type() {
+    public LootItemFunctionType type() {
         if (this.type == null) {
-            this.type = new LootFunctionType(this.serializer());
+            this.type = new LootItemFunctionType(this.serializer());
         }
 
         return this.type;
     }
 
-    public ConditionalLootFunction.Serializer<? extends LootFunction> serializer() {
+    public LootItemConditionalFunction.Serializer<? extends LootItemFunction> serializer() {
         if (this.serializer == null) {
             this.serializer = this.lootFunctionSerializerSupplier.get();
         }

@@ -5,35 +5,35 @@ import com.google.gson.JsonObject;
 import dev.sterner.brewinandchewin.BrewinAndChewin;
 import dev.sterner.brewinandchewin.common.block.entity.KegBlockEntity;
 import dev.sterner.brewinandchewin.common.registry.BCLootFunctionsRegistry;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.loot.condition.LootCondition;
-import net.minecraft.loot.context.LootContext;
-import net.minecraft.loot.context.LootContextParameters;
-import net.minecraft.loot.function.ConditionalLootFunction;
-import net.minecraft.loot.function.LootFunctionType;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.util.Identifier;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.storage.loot.LootContext;
+import net.minecraft.world.level.storage.loot.functions.LootItemConditionalFunction;
+import net.minecraft.world.level.storage.loot.functions.LootItemFunctionType;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
+import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
 import org.jetbrains.annotations.Nullable;
 
-public class CopyDrinkFunction extends ConditionalLootFunction {
-    public static final Identifier ID = new Identifier(BrewinAndChewin.MODID, "copy_meal");
+public class CopyDrinkFunction extends LootItemConditionalFunction {
+    public static final ResourceLocation ID = new ResourceLocation(BrewinAndChewin.MODID, "copy_meal");
 
-    private CopyDrinkFunction(LootCondition[] conditions) {
+    private CopyDrinkFunction(LootItemCondition[] conditions) {
         super(conditions);
     }
 
-    public static ConditionalLootFunction.Builder<?> builder() {
-        return builder(CopyDrinkFunction::new);
+    public static LootItemConditionalFunction.Builder<?> builder() {
+        return simpleBuilder(CopyDrinkFunction::new);
     }
 
     @Override
-    protected ItemStack process(ItemStack stack, LootContext context) {
-        BlockEntity tile = context.get(LootContextParameters.BLOCK_ENTITY);
+    protected ItemStack run(ItemStack stack, LootContext context) {
+        BlockEntity tile = context.getParamOrNull(LootContextParams.BLOCK_ENTITY);
         if (tile instanceof KegBlockEntity kegBlockEntity) {
-            NbtCompound tag = kegBlockEntity.writeDrink(new NbtCompound());
+            CompoundTag tag = kegBlockEntity.writeDrink(new CompoundTag());
             if (!tag.isEmpty()) {
-                stack.setSubNbt("BlockEntityTag", tag);
+                stack.addTagElement("BlockEntityTag", tag);
             }
         }
         return stack;
@@ -41,14 +41,14 @@ public class CopyDrinkFunction extends ConditionalLootFunction {
 
     @Override
     @Nullable
-    public LootFunctionType getType() {
+    public LootItemFunctionType getType() {
         return BCLootFunctionsRegistry.COPY_DRINK.type();
     }
 
-    public static class Serializer extends ConditionalLootFunction.Serializer<CopyDrinkFunction> {
+    public static class Serializer extends LootItemConditionalFunction.Serializer<CopyDrinkFunction> {
 
         @Override
-        public CopyDrinkFunction fromJson(JsonObject json, JsonDeserializationContext context, LootCondition[] conditions) {
+        public CopyDrinkFunction deserialize(JsonObject json, JsonDeserializationContext context, LootItemCondition[] conditions) {
             return new CopyDrinkFunction(conditions);
         }
     }

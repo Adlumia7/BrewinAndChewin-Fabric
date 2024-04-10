@@ -1,31 +1,31 @@
 package dev.sterner.brewinandchewin.common.statuseffect;
 
 import dev.sterner.brewinandchewin.common.registry.BCStatusEffects;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.effect.StatusEffect;
-import net.minecraft.entity.effect.StatusEffectCategory;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.util.math.random.Random;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffectCategory;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.LivingEntity;
 
-public class TipsyEffect extends StatusEffect {
-    public TipsyEffect(StatusEffectCategory statusEffectCategory, int color) {
+public class TipsyEffect extends MobEffect {
+    public TipsyEffect(MobEffectCategory statusEffectCategory, int color) {
         super(statusEffectCategory, color);
     }
 
     @Override
-    public void applyUpdateEffect(LivingEntity entity, int amplifier) {
-        StatusEffectInstance effect = entity.getStatusEffect(BCStatusEffects.TIPSY);
+    public void applyEffectTick(LivingEntity entity, int amplifier) {
+        MobEffectInstance effect = entity.getEffect(BCStatusEffects.TIPSY);
         if (effect != null) {
             if (effect.getAmplifier() > 1) {
-                entity.addStatusEffect(new StatusEffectInstance(StatusEffects.NAUSEA, effect.getDuration(), 0));
+                entity.addEffect(new MobEffectInstance(MobEffects.CONFUSION, effect.getDuration(), 0));
             }
             if (effect.getAmplifier() > 8) {
-                entity.addStatusEffect(new StatusEffectInstance(StatusEffects.POISON, effect.getDuration(), 0));
+                entity.addEffect(new MobEffectInstance(MobEffects.POISON, effect.getDuration(), 0));
             }
 
             if (effect.getAmplifier() > 3) {
-                Random rand = entity.getWorld().getRandom();
+                RandomSource rand = entity.level().getRandom();
                 float amount = rand.nextFloat() * (0.06F + (0.01F * effect.getAmplifier()));
                 float x = 0.0F;
                 float z = 0.0F;
@@ -35,13 +35,13 @@ public class TipsyEffect extends StatusEffect {
                     x = amount;
                 else
                     z = amount;
-                entity.setVelocity(entity.getVelocity().add(x, 0.0F, z));
+                entity.setDeltaMovement(entity.getDeltaMovement().add(x, 0.0F, z));
             }
         }
     }
 
     @Override
-    public boolean canApplyUpdateEffect(int duration, int amplifier) {
+    public boolean isDurationEffectTick(int duration, int amplifier) {
         return true;
     }
 }

@@ -6,17 +6,16 @@ import dev.sterner.brewinandchewin.common.block.entity.ItemCoasterBlockEntity;
 import dev.sterner.brewinandchewin.common.block.entity.KegBlockEntity;
 import dev.sterner.brewinandchewin.common.block.entity.TankardBlockEntity;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-import net.minecraft.util.Identifier;
-
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 public interface BCBlockEntityTypes {
-    Map<BlockEntityType<?>, Identifier> BLOCK_ENTITY_TYPES = new LinkedHashMap<>();
+    Map<BlockEntityType<?>, ResourceLocation> BLOCK_ENTITY_TYPES = new LinkedHashMap<>();
 
     BlockEntityType<KegBlockEntity> KEG = register("keg", FabricBlockEntityTypeBuilder.create(KegBlockEntity::new, BCObjects.KEG).build());
 
@@ -30,11 +29,11 @@ public interface BCBlockEntityTypes {
 
 
     static <T extends BlockEntity> BlockEntityType<T> register(String name, BlockEntityType<T> type) {
-        BLOCK_ENTITY_TYPES.put(type, new Identifier(BrewinAndChewin.MODID, name));
+        BLOCK_ENTITY_TYPES.put(type, new ResourceLocation(BrewinAndChewin.MODID, name));
         return type;
     }
 
     static void init() {
-        BLOCK_ENTITY_TYPES.keySet().forEach(blockEntityType -> Registry.register(Registries.BLOCK_ENTITY_TYPE, BLOCK_ENTITY_TYPES.get(blockEntityType), blockEntityType));
+        BLOCK_ENTITY_TYPES.keySet().forEach(blockEntityType -> Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE, BLOCK_ENTITY_TYPES.get(blockEntityType), blockEntityType));
     }
 }

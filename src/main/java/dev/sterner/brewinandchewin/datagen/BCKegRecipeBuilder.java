@@ -5,18 +5,18 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import dev.sterner.brewinandchewin.BrewinAndChewin;
 import dev.sterner.brewinandchewin.common.registry.BCRecipeTypes;
-import net.minecraft.data.server.recipe.RecipeJsonProvider;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemConvertible;
-import net.minecraft.recipe.Ingredient;
-import net.minecraft.recipe.RecipeSerializer;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.tag.TagKey;
-import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.function.Consumer;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.data.recipes.FinishedRecipe;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.RecipeSerializer;
+import net.minecraft.world.level.ItemLike;
 
 public class BCKegRecipeBuilder {
     private final List<Ingredient> ingredients = Lists.newArrayList();
@@ -28,7 +28,7 @@ public class BCKegRecipeBuilder {
     private final Item liquid;
     private final int temperature;
 
-    private BCKegRecipeBuilder(ItemConvertible resultIn, int count, int cookingTime, float experience, @Nullable ItemConvertible container, @Nullable ItemConvertible liquid, int temperature) {
+    private BCKegRecipeBuilder(ItemLike resultIn, int count, int cookingTime, float experience, @Nullable ItemLike container, @Nullable ItemLike liquid, int temperature) {
         this.result = resultIn.asItem();
         this.count = count;
         this.liquid = liquid != null ? liquid.asItem() : null;
@@ -38,29 +38,29 @@ public class BCKegRecipeBuilder {
         this.temperature = temperature;
     }
 
-    public static BCKegRecipeBuilder kegRecipe(ItemConvertible mainResult, int count, int cookingTime, float experience, ItemConvertible liquid, int temperature) {
+    public static BCKegRecipeBuilder kegRecipe(ItemLike mainResult, int count, int cookingTime, float experience, ItemLike liquid, int temperature) {
         return new BCKegRecipeBuilder(mainResult, count, cookingTime, experience, null, liquid, temperature);
     }
 
-    public static BCKegRecipeBuilder kegRecipe(ItemConvertible mainResult, int count, int cookingTime, float experience, int temperature) {
+    public static BCKegRecipeBuilder kegRecipe(ItemLike mainResult, int count, int cookingTime, float experience, int temperature) {
         return new BCKegRecipeBuilder(mainResult, count, cookingTime, experience, null, null, temperature);
     }
 
-    public static BCKegRecipeBuilder kegRecipe(ItemConvertible mainResult, int count, int cookingTime, float experience, ItemConvertible container, ItemConvertible liquid, int temperature) {
+    public static BCKegRecipeBuilder kegRecipe(ItemLike mainResult, int count, int cookingTime, float experience, ItemLike container, ItemLike liquid, int temperature) {
         return new BCKegRecipeBuilder(mainResult, count, cookingTime, experience, container, liquid, temperature);
     }
 
     public BCKegRecipeBuilder addIngredient(TagKey<Item> tagIn) {
-        return this.addIngredient(Ingredient.fromTag(tagIn));
+        return this.addIngredient(Ingredient.of(tagIn));
     }
 
-    public BCKegRecipeBuilder addIngredient(ItemConvertible itemIn) {
+    public BCKegRecipeBuilder addIngredient(ItemLike itemIn) {
         return this.addIngredient(itemIn, 1);
     }
 
-    public BCKegRecipeBuilder addIngredient(ItemConvertible itemIn, int quantity) {
+    public BCKegRecipeBuilder addIngredient(ItemLike itemIn, int quantity) {
         for (int i = 0; i < quantity; ++i) {
-            this.addIngredient(Ingredient.ofItems(itemIn));
+            this.addIngredient(Ingredient.of(itemIn));
         }
         return this;
     }
@@ -76,26 +76,26 @@ public class BCKegRecipeBuilder {
         return this;
     }
 
-    public void build(Consumer<RecipeJsonProvider> consumerIn) {
-        Identifier location = Registries.ITEM.getId(this.result);
+    public void build(Consumer<FinishedRecipe> consumerIn) {
+        ResourceLocation location = BuiltInRegistries.ITEM.getKey(this.result);
         this.build(consumerIn, BrewinAndChewin.MODID + ":fermenting/" + location.getPath());
     }
 
-    public void build(Consumer<RecipeJsonProvider> consumerIn, String save) {
-        Identifier resourcelocation = Registries.ITEM.getId(this.result);
-        if ((new Identifier(save)).equals(resourcelocation)) {
+    public void build(Consumer<FinishedRecipe> consumerIn, String save) {
+        ResourceLocation resourcelocation = BuiltInRegistries.ITEM.getKey(this.result);
+        if ((new ResourceLocation(save)).equals(resourcelocation)) {
             throw new IllegalStateException("Fermenting Recipe " + save + " should remove its 'save' argument");
         } else {
-            this.build(consumerIn, new Identifier(save));
+            this.build(consumerIn, new ResourceLocation(save));
         }
     }
 
-    public void build(Consumer<RecipeJsonProvider> consumerIn, Identifier id) {
+    public void build(Consumer<FinishedRecipe> consumerIn, ResourceLocation id) {
         consumerIn.accept(new BCKegRecipeBuilder.Result(id, this.result, this.count, this.ingredients, this.cookingTime, this.experience, this.container, this.liquid, this.temperature));
     }
 
-    public static class Result implements RecipeJsonProvider {
-        private final Identifier id;
+    public static class Result implements FinishedRecipe {
+        private final ResourceLocation id;
         private final List<Ingredient> ingredients;
         private final Item result;
         private final int count;
@@ -105,7 +105,7 @@ public class BCKegRecipeBuilder {
         private final Item liquid;
         private final int temperature;
 
-        public Result(Identifier idIn, Item resultIn, int countIn, List<Ingredient> ingredientsIn, int cookingTimeIn, float experienceIn, @Nullable Item containerIn, @Nullable Item liquidIn, int temperatureIn) {
+        public Result(ResourceLocation idIn, Item resultIn, int countIn, List<Ingredient> ingredientsIn, int cookingTimeIn, float experienceIn, @Nullable Item containerIn, @Nullable Item liquidIn, int temperatureIn) {
             this.id = idIn;
             this.ingredients = ingredientsIn;
             this.result = resultIn;
@@ -118,7 +118,7 @@ public class BCKegRecipeBuilder {
         }
 
         @Override
-        public void serialize(JsonObject json) {
+        public void serializeRecipeData(JsonObject json) {
             JsonArray arrayIngredients = new JsonArray();
 
             for (Ingredient ingredient : this.ingredients) {
@@ -127,7 +127,7 @@ public class BCKegRecipeBuilder {
             json.add("ingredients", arrayIngredients);
 
             JsonObject objectResult = new JsonObject();
-            objectResult.addProperty("item", Registries.ITEM.getKey(this.result).get().getValue().toString());
+            objectResult.addProperty("item", BuiltInRegistries.ITEM.getResourceKey(this.result).get().location().toString());
             if (this.count > 1) {
                 objectResult.addProperty("count", this.count);
             }
@@ -135,12 +135,12 @@ public class BCKegRecipeBuilder {
 
             if (this.container != null) {
                 JsonObject objectContainer = new JsonObject();
-                objectContainer.addProperty("item", Registries.ITEM.getKey(this.container).get().getValue().toString());
+                objectContainer.addProperty("item", BuiltInRegistries.ITEM.getResourceKey(this.container).get().location().toString());
                 json.add("container", objectContainer);
             }
             if (this.liquid != null) {
                 JsonObject objectLiquid = new JsonObject();
-                objectLiquid.addProperty("item", Registries.ITEM.getKey(this.liquid).get().getValue().toString());
+                objectLiquid.addProperty("item", BuiltInRegistries.ITEM.getResourceKey(this.liquid).get().location().toString());
                 json.add("liquid", objectLiquid);
             }
             if (this.experience > 0) {
@@ -151,24 +151,24 @@ public class BCKegRecipeBuilder {
         }
 
         @Override
-        public Identifier getRecipeId() {
+        public ResourceLocation getId() {
             return this.id;
         }
 
         @Override
-        public RecipeSerializer<?> getSerializer() {
+        public RecipeSerializer<?> getType() {
             return BCRecipeTypes.KEG_RECIPE_SERIALIZER;
         }
 
         @Nullable
         @Override
-        public JsonObject toAdvancementJson() {
+        public JsonObject serializeAdvancement() {
             return null;
         }
 
         @Nullable
         @Override
-        public Identifier getAdvancementId() {
+        public ResourceLocation getAdvancementId() {
             return null;
         }
     }

@@ -7,19 +7,19 @@ import dev.emi.emi.api.stack.EmiStack;
 import dev.emi.emi.api.widget.WidgetHolder;
 import dev.sterner.brewinandchewin.BrewinAndChewin;
 import dev.sterner.brewinandchewin.common.recipe.KegRecipe;
-import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.*;
 import java.util.List;
+import net.minecraft.resources.ResourceLocation;
 
 public class FermentingEMIRecipe implements EmiRecipe {
     private static final Rectangle FRIGID_BAR = new java.awt.Rectangle(48, 23, 6, 4);
     private static final Rectangle COLD_BAR = new java.awt.Rectangle(54, 23, 7, 4);
     private static final Rectangle WARM_BAR = new java.awt.Rectangle(67, 23, 7, 4);
     private static final Rectangle HOT_BAR = new java.awt.Rectangle(74, 23, 7, 4);
-    private static final Identifier GUI_TEXTURE = new Identifier(BrewinAndChewin.MODID, "textures/gui/jei/keg.png");
-    private final Identifier id;
+    private static final ResourceLocation GUI_TEXTURE = new ResourceLocation(BrewinAndChewin.MODID, "textures/gui/jei/keg.png");
+    private final ResourceLocation id;
     private final EmiIngredient containerOutput;
     private final int cookTime;
     private final int temp;
@@ -43,7 +43,7 @@ public class FermentingEMIRecipe implements EmiRecipe {
     }
 
     @Override
-    public @Nullable Identifier getId() {
+    public @Nullable ResourceLocation getId() {
         return id;
     }
 
@@ -71,7 +71,7 @@ public class FermentingEMIRecipe implements EmiRecipe {
     public void addWidgets(WidgetHolder widgets) {
 
         widgets.addDrawable(0, 0, 116, 56, ((draw, mouseX, mouseY, delta) -> {
-            draw.drawTexture(GUI_TEXTURE, 0, 0, 29, 16, 116, 56, 256, 256);
+            draw.blit(GUI_TEXTURE, 0, 0, 29, 16, 116, 56, 256, 256);
         }));
 
         List<EmiIngredient> v = this.ingredients;
@@ -88,23 +88,23 @@ public class FermentingEMIRecipe implements EmiRecipe {
 
         if (temp <= 2) {
             widgets.addDrawable(COLD_BAR.x, COLD_BAR.y, COLD_BAR.width, COLD_BAR.height, ((draw, mouseX, mouseY, delta) -> {
-                draw.drawTexture(GUI_TEXTURE, 0, 0, 182, 0, COLD_BAR.width, COLD_BAR.height, 256, 256);
+                draw.blit(GUI_TEXTURE, 0, 0, 182, 0, COLD_BAR.width, COLD_BAR.height, 256, 256);
             }));
 
         }
         if (temp <= 1) {
             widgets.addDrawable(FRIGID_BAR.x, FRIGID_BAR.y, FRIGID_BAR.width, FRIGID_BAR.height, ((draw, mouseX, mouseY, delta) -> {
-                draw.drawTexture(GUI_TEXTURE, 0, 0, 176, 0, FRIGID_BAR.width, FRIGID_BAR.height, 256, 256);
+                draw.blit(GUI_TEXTURE, 0, 0, 176, 0, FRIGID_BAR.width, FRIGID_BAR.height, 256, 256);
             }));
         }
         if (temp >= 4) {
             widgets.addDrawable(WARM_BAR.x, WARM_BAR.y, WARM_BAR.width, WARM_BAR.height, ((draw, mouseX, mouseY, delta) -> {
-                draw.drawTexture(GUI_TEXTURE, 0, 0, 195, 0, WARM_BAR.width, WARM_BAR.height, 256, 256);
+                draw.blit(GUI_TEXTURE, 0, 0, 195, 0, WARM_BAR.width, WARM_BAR.height, 256, 256);
             }));
         }
         if (temp >= 5) {
             widgets.addDrawable(HOT_BAR.x, HOT_BAR.y, HOT_BAR.width, HOT_BAR.height, ((draw, mouseX, mouseY, delta) -> {
-                draw.drawTexture(GUI_TEXTURE, 0, 0, 202, 0, HOT_BAR.width, HOT_BAR.height, 256, 256);
+                draw.blit(GUI_TEXTURE, 0, 0, 202, 0, HOT_BAR.width, HOT_BAR.height, 256, 256);
             }));
         }
     }

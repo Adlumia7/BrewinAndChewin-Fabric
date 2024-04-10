@@ -1,52 +1,54 @@
 package dev.sterner.brewinandchewin.common.block.screen;
 
 import dev.sterner.brewinandchewin.common.block.entity.KegBlockEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.screen.slot.Slot;
+import io.github.fabricators_of_create.porting_lib.transfer.item.ItemStackHandler;
+import io.github.fabricators_of_create.porting_lib.transfer.item.SlotItemHandler;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
 
-public class KegResultSlot extends Slot {
+public class KegResultSlot extends SlotItemHandler {
     public final KegBlockEntity blockEntity;
-    private final PlayerEntity player;
+    private final Player player;
     private int removeCount;
 
-    public KegResultSlot(PlayerEntity player, KegBlockEntity blockEntity, int index, int xPosition, int yPosition) {
-        super(blockEntity, index, xPosition, yPosition);
+    public KegResultSlot(Player player, KegBlockEntity blockEntity, ItemStackHandler inventoryIn, int index, int xPosition, int yPosition) {
+        super(inventoryIn, index, xPosition, yPosition);
         this.blockEntity = blockEntity;
         this.player = player;
     }
 
     @Override
-    public boolean canInsert(ItemStack stack) {
+    public boolean mayPlace(ItemStack stack) {
         return false;
     }
 
     @Override
-    public ItemStack takeStack(int amount) {
-        if (this.hasStack()) {
-            this.removeCount += Math.min(amount, this.getStack().getCount());
+    public ItemStack remove(int amount) {
+        if (this.hasItem()) {
+            this.removeCount += Math.min(amount, this.getItem().getCount());
         }
-        return super.takeStack(amount);
+        return super.remove(amount);
     }
 
     @Override
-    public void onTakeItem(PlayerEntity player, ItemStack stack) {
-        this.onCrafted(stack);
-        super.onTakeItem(player, stack);
+    public void onTake(Player player, ItemStack stack) {
+        this.checkTakeAchievements(stack);
+        super.onTake(player, stack);
     }
 
 
     @Override
-    protected void onCrafted(ItemStack stack, int amount) {
+    protected void onQuickCraft(ItemStack stack, int amount) {
         this.removeCount += amount;
-        this.onCrafted(stack);
+        this.checkTakeAchievements(stack);
     }
 
     @Override
-    protected void onCrafted(ItemStack stack) {
-        stack.onCraft(this.player.getWorld(), this.player, this.removeCount);
+    protected void checkTakeAchievements(ItemStack stack) {
+        stack.onCraftedBy(this.player.level(), this.player, this.removeCount);
 
-        if (!this.player.getWorld().isClient()) {
+        if (!this.player.level().isClientSide()) {
             blockEntity.unlockLastRecipe(this.player);
         }
 

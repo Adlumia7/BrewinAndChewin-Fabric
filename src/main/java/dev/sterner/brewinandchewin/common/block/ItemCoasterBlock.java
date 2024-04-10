@@ -2,178 +2,189 @@ package dev.sterner.brewinandchewin.common.block;
 
 import dev.sterner.brewinandchewin.common.block.entity.ItemCoasterBlockEntity;
 import dev.sterner.brewinandchewin.common.registry.BCTags;
-import net.minecraft.block.*;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.fluid.FluidState;
-import net.minecraft.fluid.Fluids;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.item.ItemStack;
-import net.minecraft.sound.BlockSoundGroup;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.state.StateManager;
-import net.minecraft.state.property.BooleanProperty;
-import net.minecraft.state.property.DirectionProperty;
-import net.minecraft.state.property.Properties;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.*;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.shape.VoxelShape;
-import net.minecraft.world.BlockView;
-import net.minecraft.world.World;
-import net.minecraft.world.WorldAccess;
-import net.minecraft.world.WorldView;
+import net.minecraft.world.Containers;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.block.BaseEntityBlock;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.SimpleWaterloggedBlock;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
-public class ItemCoasterBlock extends BlockWithEntity implements Waterloggable {
+public class ItemCoasterBlock extends BaseEntityBlock implements SimpleWaterloggedBlock {
     public static final DirectionProperty FACING;
     public static final BooleanProperty WATERLOGGED;
     protected static final VoxelShape SHAPE;
 
     public ItemCoasterBlock() {
-        super(Settings.copy(Blocks.WHITE_CARPET).sounds(BlockSoundGroup.WOOD).strength(0.2F));
-        this.setDefaultState(((this.getDefaultState()).with(FACING, Direction.NORTH)).with(WATERLOGGED, false));
+        super(Properties.copy(Blocks.WHITE_CARPET).sound(SoundType.WOOD).strength(0.2F));
+        this.registerDefaultState(((this.defaultBlockState()).setValue(FACING, Direction.NORTH)).setValue(WATERLOGGED, false));
     }
 
     @Override
-    public BlockRenderType getRenderType(BlockState state) {
-        return BlockRenderType.MODEL;
+    public RenderShape getRenderShape(BlockState state) {
+        return RenderShape.MODEL;
     }
 
     @Nullable
     @Override
-    public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new ItemCoasterBlockEntity(pos, state);
     }
 
     @Override
-    public ItemStack getPickStack(BlockView world, BlockPos pos, BlockState state) {
+    public ItemStack getCloneItemStack(BlockGetter world, BlockPos pos, BlockState state) {
         BlockEntity tileEntity = world.getBlockEntity(pos);
         if (tileEntity instanceof ItemCoasterBlockEntity itemCoasterBlockEntity) {
             if (!itemCoasterBlockEntity.isEmpty()) {
                 return itemCoasterBlockEntity.getStoredItem();
             }
         }
-        return super.getPickStack(world, pos, state);
+        return super.getCloneItemStack(world, pos, state);
     }
 
     @Override
-    public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+    public VoxelShape getShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
         return SHAPE;
     }
 
     @Override
-    public VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+    public VoxelShape getCollisionShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
         return SHAPE;
     }
 
     @Override
-    public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
+    public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
         BlockEntity tileEntity = world.getBlockEntity(pos);
         if (tileEntity instanceof ItemCoasterBlockEntity itemCoasterBlockEntity) {
-            ItemStack heldStack = player.getStackInHand(hand);
-            ItemStack offhandStack = player.getOffHandStack();
+            ItemStack heldStack = player.getItemInHand(hand);
+            ItemStack offhandStack = player.getOffhandItem();
             if (itemCoasterBlockEntity.isEmpty()) {
                 if (!offhandStack.isEmpty()) {
-                    if (hand.equals(Hand.MAIN_HAND) && !offhandStack.isIn(BCTags.OFFHAND_EQUIPMENT) && !(heldStack.getItem() instanceof BlockItem)) {
-                        return ActionResult.PASS;
+                    if (hand.equals(InteractionHand.MAIN_HAND) && !offhandStack.is(BCTags.OFFHAND_EQUIPMENT) && !(heldStack.getItem() instanceof BlockItem)) {
+                        return InteractionResult.PASS;
                     }
 
-                    if (hand.equals(Hand.OFF_HAND) && offhandStack.isIn(BCTags.OFFHAND_EQUIPMENT)) {
-                        return ActionResult.PASS;
+                    if (hand.equals(InteractionHand.OFF_HAND) && offhandStack.is(BCTags.OFFHAND_EQUIPMENT)) {
+                        return InteractionResult.PASS;
                     }
                 }
 
                 if (heldStack.isEmpty()) {
-                    return ActionResult.PASS;
+                    return InteractionResult.PASS;
                 }
 
-                if (itemCoasterBlockEntity.addItem(player.getAbilities().creativeMode ? heldStack.copy() : heldStack)) {
-                    world.playSound(null, ((float) pos.getX() + 0.5F), pos.getY(), (float) pos.getZ() + 0.5F, SoundEvents.BLOCK_WOOL_PLACE, SoundCategory.BLOCKS, 0.5F, 0.8F);
-                    return ActionResult.SUCCESS;
+                if (itemCoasterBlockEntity.addItem(player.getAbilities().instabuild ? heldStack.copy() : heldStack)) {
+                    world.playSound(null, ((float) pos.getX() + 0.5F), pos.getY(), (float) pos.getZ() + 0.5F, SoundEvents.WOOL_PLACE, SoundSource.BLOCKS, 0.5F, 0.8F);
+                    return InteractionResult.SUCCESS;
                 }
 
                 if (!heldStack.isEmpty()) {
-                    return ActionResult.CONSUME;
+                    return InteractionResult.CONSUME;
                 }
-            } else if (hand.equals(Hand.MAIN_HAND)) {
+            } else if (hand.equals(InteractionHand.MAIN_HAND)) {
                 if (!player.isCreative()) {
-                    if (!player.getInventory().insertStack(itemCoasterBlockEntity.removeItem())) {
-                        ItemScatterer.spawn(world, pos.getX(), pos.getY(), pos.getZ(), itemCoasterBlockEntity.removeItem());
+                    if (!player.getInventory().add(itemCoasterBlockEntity.removeItem())) {
+                        Containers.dropItemStack(world, pos.getX(), pos.getY(), pos.getZ(), itemCoasterBlockEntity.removeItem());
                     }
                 } else {
                     itemCoasterBlockEntity.removeItem();
                 }
 
-                world.playSound(null, (float) pos.getX() + 0.5F, pos.getY(), (float) pos.getZ() + 0.5F, SoundEvents.BLOCK_WOOL_HIT, SoundCategory.BLOCKS, 0.5F, 0.5F);
-                return ActionResult.SUCCESS;
+                world.playSound(null, (float) pos.getX() + 0.5F, pos.getY(), (float) pos.getZ() + 0.5F, SoundEvents.WOOL_HIT, SoundSource.BLOCKS, 0.5F, 0.5F);
+                return InteractionResult.SUCCESS;
             }
         }
 
-        return ActionResult.PASS;
+        return InteractionResult.PASS;
     }
 
 
     @Override
-    public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
+    public void onRemove(BlockState state, Level world, BlockPos pos, BlockState newState, boolean moved) {
         if (state.getBlock() != newState.getBlock()) {
             BlockEntity tileEntity = world.getBlockEntity(pos);
             if (tileEntity instanceof ItemCoasterBlockEntity) {
-                ItemScatterer.spawn(world, pos.getX(), pos.getY(), pos.getZ(), ((ItemCoasterBlockEntity) tileEntity).getStoredItem());
-                world.updateComparators(pos, this);
+                Containers.dropItemStack(world, pos.getX(), pos.getY(), pos.getZ(), ((ItemCoasterBlockEntity) tileEntity).getStoredItem());
+                world.updateNeighbourForOutputSignal(pos, this);
             }
-            super.onStateReplaced(state, world, pos, newState, moved);
+            super.onRemove(state, world, pos, newState, moved);
         }
     }
 
     @Override
-    public boolean canMobSpawnInside(BlockState state) {
+    public boolean isPossibleToRespawnInThis(BlockState state) {
         return true;
     }
 
     @Nullable
     @Override
-    public BlockState getPlacementState(ItemPlacementContext ctx) {
-        FluidState fluid = ctx.getWorld().getFluidState(ctx.getBlockPos());
-        return this.getDefaultState().with(FACING, ctx.getHorizontalPlayerFacing().getOpposite()).with(WATERLOGGED, fluid.getFluid() == Fluids.WATER);
+    public BlockState getStateForPlacement(BlockPlaceContext ctx) {
+        FluidState fluid = ctx.getLevel().getFluidState(ctx.getClickedPos());
+        return this.defaultBlockState().setValue(FACING, ctx.getHorizontalDirection().getOpposite()).setValue(WATERLOGGED, fluid.getType() == Fluids.WATER);
     }
 
     @Override
-    public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos) {
-        if (state.get(WATERLOGGED)) {
-            world.scheduleFluidTick(pos, Fluids.WATER, Fluids.WATER.getTickRate(world));
+    public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, LevelAccessor world, BlockPos pos, BlockPos neighborPos) {
+        if (state.getValue(WATERLOGGED)) {
+            world.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(world));
         }
 
-        return direction == Direction.DOWN && !state.canPlaceAt(world, pos) ? Blocks.AIR.getDefaultState() :
-                super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
+        return direction == Direction.DOWN && !state.canSurvive(world, pos) ? Blocks.AIR.defaultBlockState() :
+                super.updateShape(state, direction, neighborState, world, pos, neighborPos);
     }
 
     @Override
-    public boolean canPlaceAt(BlockState state, WorldView world, BlockPos pos) {
-        BlockPos floorPos = pos.down();
-        return hasTopRim(world, floorPos) || sideCoversSmallSquare(world, floorPos, Direction.UP);
+    public boolean canSurvive(BlockState state, LevelReader world, BlockPos pos) {
+        BlockPos floorPos = pos.below();
+        return canSupportRigidBlock(world, floorPos) || canSupportCenter(world, floorPos, Direction.UP);
     }
 
     @Override
-    protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-        super.appendProperties(builder);
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        super.createBlockStateDefinition(builder);
         builder.add(FACING, WATERLOGGED);
     }
 
     @Override
     public FluidState getFluidState(BlockState state) {
-        return state.get(WATERLOGGED) ? Fluids.WATER.getStill(false) : super.getFluidState(state);
+        return state.getValue(WATERLOGGED) ? Fluids.WATER.getSource(false) : super.getFluidState(state);
     }
 
-    public boolean hasComparatorOutput(BlockState state) {
+    public boolean hasAnalogOutputSignal(BlockState state) {
         return true;
     }
 
     @Override
-    public int getComparatorOutput(BlockState blockState, World worldIn, BlockPos pos) {
+    public int getAnalogOutputSignal(BlockState blockState, Level worldIn, BlockPos pos) {
         BlockEntity tileEntity = worldIn.getBlockEntity(pos);
         if (tileEntity instanceof ItemCoasterBlockEntity) {
             return !((ItemCoasterBlockEntity) tileEntity).isEmpty() ? 15 : 0;
@@ -183,19 +194,19 @@ public class ItemCoasterBlock extends BlockWithEntity implements Waterloggable {
     }
 
     @Override
-    public BlockState rotate(BlockState state, BlockRotation rotation) {
-        return state.with(FACING, rotation.rotate(state.get(FACING)));
+    public BlockState rotate(BlockState state, Rotation rotation) {
+        return state.setValue(FACING, rotation.rotate(state.getValue(FACING)));
     }
 
     @Override
-    public BlockState mirror(BlockState pState, BlockMirror pMirror) {
-        return pState.rotate(pMirror.getRotation(pState.get(FACING)));
+    public BlockState mirror(BlockState pState, Mirror pMirror) {
+        return pState.rotate(pMirror.getRotation(pState.getValue(FACING)));
     }
 
 
     static {
-        FACING = Properties.HORIZONTAL_FACING;
-        WATERLOGGED = Properties.WATERLOGGED;
-        SHAPE = Block.createCuboidShape(3.0, 0.0, 3.0, 13.0, 1.0, 13.0);
+        FACING = BlockStateProperties.HORIZONTAL_FACING;
+        WATERLOGGED = BlockStateProperties.WATERLOGGED;
+        SHAPE = Block.box(3.0, 0.0, 3.0, 13.0, 1.0, 13.0);
     }
 }

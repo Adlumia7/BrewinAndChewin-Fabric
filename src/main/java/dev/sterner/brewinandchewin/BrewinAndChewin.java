@@ -3,20 +3,20 @@ package dev.sterner.brewinandchewin;
 import dev.sterner.brewinandchewin.common.registry.*;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
-import net.minecraft.item.ItemGroup;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.ItemStack;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class BrewinAndChewin implements ModInitializer {
     public static final String MODID = "brewinandchewin";
-    public static final RegistryKey<ItemGroup> ITEM_GROUP = RegistryKey.of(RegistryKeys.ITEM_GROUP, new Identifier(MODID, "main"));
+    public static final ResourceKey<CreativeModeTab> ITEM_GROUP = ResourceKey.create(Registries.CREATIVE_MODE_TAB, new ResourceLocation(MODID, "main"));
 
     public static final Logger LOGGER = LogManager.getLogger();
     public static final boolean DEBUG_MODE = false;
@@ -30,9 +30,9 @@ public class BrewinAndChewin implements ModInitializer {
         BCScreenHandlerTypes.init();
         BCLootFunctionsRegistry.init();
 
-        Registry.register(Registries.ITEM_GROUP, ITEM_GROUP, FabricItemGroup.builder()
+        Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, ITEM_GROUP, FabricItemGroup.builder()
                 .icon(() -> new ItemStack(BCObjects.BEER))
-                .displayName(Text.translatable(MODID + ".group.main"))
+                .title(Component.translatable(MODID + ".group.main"))
                 .build());
     }
 }

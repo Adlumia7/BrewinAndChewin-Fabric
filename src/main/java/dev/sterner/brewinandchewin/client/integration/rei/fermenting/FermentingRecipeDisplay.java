@@ -7,9 +7,8 @@ import me.shedaniel.rei.api.common.category.CategoryIdentifier;
 import me.shedaniel.rei.api.common.display.basic.BasicDisplay;
 import me.shedaniel.rei.api.common.entry.EntryIngredient;
 import me.shedaniel.rei.api.common.util.EntryIngredients;
-import net.minecraft.recipe.Ingredient;
-import net.minecraft.util.collection.DefaultedList;
-
+import net.minecraft.core.NonNullList;
+import net.minecraft.world.item.crafting.Ingredient;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -21,7 +20,7 @@ public class FermentingRecipeDisplay extends BasicDisplay {
     private final int cookTime;
     private final int temp;
     final EntryIngredient liquid;
-    final DefaultedList<Ingredient> ingredients;
+    final NonNullList<Ingredient> ingredients;
 
     public FermentingRecipeDisplay(KegRecipe recipe) {
         super(EntryIngredients.ofIngredients(recipe.getIngredients()), Collections.singletonList(EntryIngredients.of(recipe.output)), Optional.ofNullable(recipe.getId()));

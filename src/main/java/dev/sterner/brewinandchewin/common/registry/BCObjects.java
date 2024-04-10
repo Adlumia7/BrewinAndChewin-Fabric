@@ -1,27 +1,27 @@
 package dev.sterner.brewinandchewin.common.registry;
 
-import com.nhoryzon.mc.farmersdelight.item.ConsumableItem;
 import dev.sterner.brewinandchewin.BrewinAndChewin;
 import dev.sterner.brewinandchewin.common.block.*;
 import dev.sterner.brewinandchewin.common.item.BoozeBlockItem;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
-import net.minecraft.block.AbstractBlock;
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.Item;
-import net.minecraft.item.Items;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-import net.minecraft.util.Identifier;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import vectorwing.farmersdelight.common.item.ConsumableItem;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 public interface BCObjects {
-    Map<Block, Identifier> BLOCKS = new LinkedHashMap<>();
-    Map<Item, Identifier> ITEMS = new LinkedHashMap<>();
+    Map<Block, ResourceLocation> BLOCKS = new LinkedHashMap<>();
+    Map<Item, ResourceLocation> ITEMS = new LinkedHashMap<>();
 
     Item TANKARD = register("tankard", new Item(settings()));
 
@@ -83,17 +83,17 @@ public interface BCObjects {
     Item SCARLET_PIEROGIES = register("scarlet_pierogies", new ConsumableItem(bowlFoodItem().food(BCFoodComponents.SCARLET_PIEROGIES)));
     Item HORROR_LASAGNA = register("horror_lasagna", new ConsumableItem(bowlFoodItem().food(BCFoodComponents.HORROR_LASAGNA)));
 
-    Block QUICHE = register("quiche", new QuicheBlock(AbstractBlock.Settings.copy(Blocks.CAULDRON)), settings(), true);
-    Block FIERY_FONDUE_POT = register("fiery_fondue_pot", new FieryFonduePotBlock(AbstractBlock.Settings.copy(Blocks.CAKE)), settings().maxCount(1), true);
+    Block QUICHE = register("quiche", new QuicheBlock(BlockBehaviour.Properties.copy(Blocks.CAULDRON)), settings(), true);
+    Block FIERY_FONDUE_POT = register("fiery_fondue_pot", new FieryFonduePotBlock(BlockBehaviour.Properties.copy(Blocks.CAKE)), settings().stacksTo(1), true);
 
 
-    Block FLAXEN_CHEESE_WHEEL = register("flaxen_cheese_wheel", new RipeCheeseWheelBlock(FLAXEN_CHEESE_WEDGE, FabricBlockSettings.copy(Blocks.CAKE)), settings().maxCount(16), true);
-    Block SCARLET_CHEESE_WHEEL = register("scarlet_cheese_wheel", new RipeCheeseWheelBlock(SCARLET_CHEESE_WEDGE, FabricBlockSettings.copy(Blocks.CAKE)), settings().maxCount(16), true);
-    Block UNRIPE_FLAXEN_CHEESE_WHEEL = register("unripe_flaxen_cheese_wheel", new UnripeCheeseWheelBlock(FLAXEN_CHEESE_WHEEL, FabricBlockSettings.copy(Blocks.CAKE)), settings().maxCount(16), true);
-    Block UNRIPE_SCARLET_CHEESE_WHEEL = register("unripe_scarlet_cheese_wheel", new UnripeCheeseWheelBlock(SCARLET_CHEESE_WHEEL, FabricBlockSettings.copy(Blocks.CAKE)), settings().maxCount(16), true);
+    Block FLAXEN_CHEESE_WHEEL = register("flaxen_cheese_wheel", new RipeCheeseWheelBlock(FLAXEN_CHEESE_WEDGE, FabricBlockSettings.copy(Blocks.CAKE)), settings().stacksTo(16), true);
+    Block SCARLET_CHEESE_WHEEL = register("scarlet_cheese_wheel", new RipeCheeseWheelBlock(SCARLET_CHEESE_WEDGE, FabricBlockSettings.copy(Blocks.CAKE)), settings().stacksTo(16), true);
+    Block UNRIPE_FLAXEN_CHEESE_WHEEL = register("unripe_flaxen_cheese_wheel", new UnripeCheeseWheelBlock(FLAXEN_CHEESE_WHEEL, FabricBlockSettings.copy(Blocks.CAKE)), settings().stacksTo(16), true);
+    Block UNRIPE_SCARLET_CHEESE_WHEEL = register("unripe_scarlet_cheese_wheel", new UnripeCheeseWheelBlock(SCARLET_CHEESE_WHEEL, FabricBlockSettings.copy(Blocks.CAKE)), settings().stacksTo(16), true);
 
     Item PIZZA_SLICE = register("pizza_slice", new Item(settings().food(BCFoodComponents.PIZZA_SLICE)));
-    Block PIZZA = register("pizza", new PizzaBlock(FabricBlockSettings.copy(Blocks.CAKE)), settings().maxCount(16), true);
+    Block PIZZA = register("pizza", new PizzaBlock(FabricBlockSettings.copy(Blocks.CAKE)), settings().stacksTo(16), true);
 
     Item HAM_AND_CHEESE_SANDWICH = register("ham_and_cheese_sandwich", new Item(settings().food(BCFoodComponents.HAM_AND_CHEESE_SANDWICH)));
 
@@ -101,25 +101,25 @@ public interface BCObjects {
     Block COASTER = register("item_coaster", new ItemCoasterBlock(), settings(), true);
     Block FERMENTATION_CONTROLLER = register("fermentation_controller", new FermentationControllerBlock(), settings(), true);
 
-    static Item.Settings drinkItem() {
-        return (new Item.Settings()).recipeRemainder(TANKARD).maxCount(16);
+    static Item.Properties drinkItem() {
+        return (new Item.Properties()).craftRemainder(TANKARD).stacksTo(16);
     }
 
-    static Item.Settings bowlFoodItem() {
-        return (new Item.Settings()).recipeRemainder(Items.BOWL).maxCount(16);
+    static Item.Properties bowlFoodItem() {
+        return (new Item.Properties()).craftRemainder(Items.BOWL).stacksTo(16);
     }
 
-    static Item.Settings settings() {
-        return new Item.Settings();
+    static Item.Properties settings() {
+        return new Item.Properties();
     }
 
     static <T extends Item> T register(String name, T item) {
-        ITEMS.put(item, new Identifier(BrewinAndChewin.MODID, name));
+        ITEMS.put(item, new ResourceLocation(BrewinAndChewin.MODID, name));
         return item;
     }
 
-    static <T extends Block> T register(String name, T block, Item.Settings settings, boolean createItem) {
-        BLOCKS.put(block, new Identifier(BrewinAndChewin.MODID, name));
+    static <T extends Block> T register(String name, T block, Item.Properties settings, boolean createItem) {
+        BLOCKS.put(block, new ResourceLocation(BrewinAndChewin.MODID, name));
         if (createItem) {
             ITEMS.put(new BlockItem(block, settings), BLOCKS.get(block));
         }
@@ -127,8 +127,8 @@ public interface BCObjects {
     }
 
     static void init() {
-        BLOCKS.keySet().forEach(block -> Registry.register(Registries.BLOCK, BLOCKS.get(block), block));
-        ITEMS.keySet().forEach(item -> Registry.register(Registries.ITEM, ITEMS.get(item), item));
-        ItemGroupEvents.modifyEntriesEvent(BrewinAndChewin.ITEM_GROUP).register(entries -> ITEMS.keySet().forEach(entries::add));
+        BLOCKS.keySet().forEach(block -> Registry.register(BuiltInRegistries.BLOCK, BLOCKS.get(block), block));
+        ITEMS.keySet().forEach(item -> Registry.register(BuiltInRegistries.ITEM, ITEMS.get(item), item));
+        ItemGroupEvents.modifyEntriesEvent(BrewinAndChewin.ITEM_GROUP).register(entries -> ITEMS.keySet().forEach(entries::accept));
     }
 }

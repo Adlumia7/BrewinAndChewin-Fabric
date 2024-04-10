@@ -1,21 +1,21 @@
 package dev.sterner.brewinandchewin.common.statuseffect;
 
 import dev.sterner.brewinandchewin.common.registry.BCStatusEffects;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.effect.StatusEffect;
-import net.minecraft.entity.effect.StatusEffectCategory;
-import net.minecraft.entity.player.HungerManager;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffectCategory;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.food.FoodData;
 
-public class SatisfactionEffect extends StatusEffect {
-    public SatisfactionEffect(StatusEffectCategory statusEffectCategory, int color) {
+public class SatisfactionEffect extends MobEffect {
+    public SatisfactionEffect(MobEffectCategory statusEffectCategory, int color) {
         super(statusEffectCategory, color);
     }
 
     @Override
-    public void applyUpdateEffect(LivingEntity entity, int amplifier) {
-        if (entity.hasStatusEffect(BCStatusEffects.SATISFACTION) && entity instanceof PlayerEntity player) {
-            HungerManager foodData = player.getHungerManager();
+    public void applyEffectTick(LivingEntity entity, int amplifier) {
+        if (entity.hasEffect(BCStatusEffects.SATISFACTION) && entity instanceof Player player) {
+            FoodData foodData = player.getFoodData();
             if (foodData.getFoodLevel() < 20) {
                 foodData.setFoodLevel(foodData.getFoodLevel() + 1);
             }
@@ -23,7 +23,7 @@ public class SatisfactionEffect extends StatusEffect {
     }
 
     @Override
-    public boolean canApplyUpdateEffect(int duration, int amplifier) {
+    public boolean isDurationEffectTick(int duration, int amplifier) {
         int k = 400 >> amplifier;
         if (k > 0) {
             return duration % k == 0;

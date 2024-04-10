@@ -1,13 +1,13 @@
 package dev.sterner.brewinandchewin.common.block.entity;
 
-import com.nhoryzon.mc.farmersdelight.entity.block.SyncedBlockEntity;
 import dev.sterner.brewinandchewin.common.block.FermentationControllerBlock;
 import dev.sterner.brewinandchewin.common.registry.BCBlockEntityTypes;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import vectorwing.farmersdelight.common.block.entity.SyncedBlockEntity;
 
 import static dev.sterner.brewinandchewin.common.block.FermentationControllerBlock.STATE;
 
@@ -24,8 +24,8 @@ public class FermentationControllerBlockEntity extends SyncedBlockEntity {
         super(BCBlockEntityTypes.FERMENTATION_CONTROLLER, pos, state);
     }
 
-    public void tick(World world, BlockPos pos, BlockState state) {
-        if (world != null && !world.isClient) {
+    public void tick(Level world, BlockPos pos, BlockState state) {
+        if (world != null && !world.isClientSide) {
             if (getTemperature() != getTargetTemperature()) {
                 ticker++;
                 if (ticker > 20 * 5) {
@@ -43,37 +43,37 @@ public class FermentationControllerBlockEntity extends SyncedBlockEntity {
         }
     }
 
-    private void updateState(World world, BlockPos pos, BlockState state) {
+    private void updateState(Level world, BlockPos pos, BlockState state) {
         int temperature = getTemperature();
-        if (temperature == 0 && state.get(STATE) != FermentationControllerBlock.State.NONE) {
-            world.setBlockState(pos, state.with(STATE, FermentationControllerBlock.State.NONE), Block.field_31022);
+        if (temperature == 0 && state.getValue(STATE) != FermentationControllerBlock.State.NONE) {
+            world.setBlock(pos, state.setValue(STATE, FermentationControllerBlock.State.NONE), Block.UPDATE_ALL_IMMEDIATE);
 
-        } else if (temperature > 0 && state.get(STATE) != FermentationControllerBlock.State.HOT) {
-            world.setBlockState(pos, state.with(STATE, FermentationControllerBlock.State.HOT), Block.field_31022);
+        } else if (temperature > 0 && state.getValue(STATE) != FermentationControllerBlock.State.HOT) {
+            world.setBlock(pos, state.setValue(STATE, FermentationControllerBlock.State.HOT), Block.UPDATE_ALL_IMMEDIATE);
 
-        } else if (temperature < 0 && state.get(STATE) != FermentationControllerBlock.State.COLD) {
-            world.setBlockState(pos, state.with(STATE, FermentationControllerBlock.State.COLD), Block.field_31022);
+        } else if (temperature < 0 && state.getValue(STATE) != FermentationControllerBlock.State.COLD) {
+            world.setBlock(pos, state.setValue(STATE, FermentationControllerBlock.State.COLD), Block.UPDATE_ALL_IMMEDIATE);
         }
     }
 
     @Override
-    public void readNbt(NbtCompound nbt) {
-        super.readNbt(nbt);
+    public void load(CompoundTag nbt) {
+        super.load(nbt);
         temperature = nbt.getInt("Temperature");
         targetTemp = nbt.getInt("TargetTemperature");
     }
 
     @Override
-    protected void writeNbt(NbtCompound nbt) {
-        super.writeNbt(nbt);
+    protected void saveAdditional(CompoundTag nbt) {
+        super.saveAdditional(nbt);
         nbt.putInt("Temperature", getTemperature());
         nbt.putInt("TargetTemperature", getTargetTemperature());
     }
 
     private void sync() {
-        this.markDirty();
-        if (this.world != null) {
-            this.world.updateListeners(this.getPos(), this.getCachedState(), this.getCachedState(), 3);
+        this.setChanged();
+        if (this.level != null) {
+            this.level.sendBlockUpdated(this.getBlockPos(), this.getBlockState(), this.getBlockState(), 3);
         }
     }
 

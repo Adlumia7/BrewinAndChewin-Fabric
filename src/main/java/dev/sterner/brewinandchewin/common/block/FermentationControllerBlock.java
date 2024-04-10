@@ -2,46 +2,51 @@ package dev.sterner.brewinandchewin.common.block;
 
 import dev.sterner.brewinandchewin.common.block.entity.FermentationControllerBlockEntity;
 import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
-import net.minecraft.block.*;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.BlockEntityTicker;
-import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.item.ItemStack;
-import net.minecraft.sound.BlockSoundGroup;
-import net.minecraft.state.StateManager;
-import net.minecraft.state.property.BooleanProperty;
-import net.minecraft.state.property.EnumProperty;
-import net.minecraft.util.BlockMirror;
-import net.minecraft.util.BlockRotation;
-import net.minecraft.util.StringIdentifiable;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.util.StringRepresentable;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.BaseEntityBlock;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.HorizontalDirectionalBlock;
+import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import org.jetbrains.annotations.Nullable;
 
 
-public class FermentationControllerBlock extends BlockWithEntity {
+public class FermentationControllerBlock extends BaseEntityBlock {
 
-    public static final EnumProperty<State> STATE = EnumProperty.of("state", State.class);
-    public static final BooleanProperty VERTICAL = BooleanProperty.of("vertical");
+    public static final EnumProperty<State> STATE = EnumProperty.create("state", State.class);
+    public static final BooleanProperty VERTICAL = BooleanProperty.create("vertical");
 
     public FermentationControllerBlock() {
-        super(FabricBlockSettings.copyOf(Blocks.OAK_WOOD).strength(2, 4).sounds(BlockSoundGroup.METAL).nonOpaque());
-        setDefaultState(this.stateManager.getDefaultState().with(HorizontalFacingBlock.FACING, Direction.NORTH).with(STATE, State.NONE).with(VERTICAL, true));
+        super(FabricBlockSettings.copyOf(Blocks.OAK_WOOD).strength(2, 4).sound(SoundType.METAL).noOcclusion());
+        registerDefaultState(this.stateDefinition.any().setValue(HorizontalDirectionalBlock.FACING, Direction.NORTH).setValue(STATE, State.NONE).setValue(VERTICAL, true));
     }
 
     @Nullable
     @Override
-    public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new FermentationControllerBlockEntity(pos, state);
     }
 
     @Nullable
     @Override
-    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level world, BlockState state, BlockEntityType<T> type) {
         return (tickerWorld, pos, tickerState, blockEntity) -> {
             if (blockEntity instanceof FermentationControllerBlockEntity be) {
                 be.tick(world, pos, state);
@@ -50,23 +55,23 @@ public class FermentationControllerBlock extends BlockWithEntity {
     }
 
     @Override
-    public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
+    public void setPlacedBy(Level world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
         updateTemp(world, pos, state);
-        super.onPlaced(world, pos, state, placer, itemStack);
+        super.setPlacedBy(world, pos, state, placer, itemStack);
     }
 
     @Override
-    public void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, BlockPos sourcePos, boolean notify) {
+    public void neighborChanged(BlockState state, Level world, BlockPos pos, Block sourceBlock, BlockPos sourcePos, boolean notify) {
         updateTemp(world, pos, state);
-        super.neighborUpdate(state, world, pos, sourceBlock, sourcePos, notify);
+        super.neighborChanged(state, world, pos, sourceBlock, sourcePos, notify);
     }
 
-    private void updateTemp(World world, BlockPos pos, BlockState state) {
+    private void updateTemp(Level world, BlockPos pos, BlockState state) {
         if (world.getBlockEntity(pos) instanceof FermentationControllerBlockEntity blockEntity) {
-            Direction facing = state.get(HorizontalFacingBlock.FACING);
+            Direction facing = state.getValue(HorizontalDirectionalBlock.FACING);
 
-            Direction right = facing.rotateYClockwise();
-            Direction left = facing.rotateYCounterclockwise();
+            Direction right = facing.getClockWise();
+            Direction left = facing.getCounterClockWise();
 
             int coldPower = getReceivedRedstonePower(world, pos, right);
             int hotPower = getReceivedRedstonePower(world, pos, left);
@@ -75,10 +80,10 @@ public class FermentationControllerBlock extends BlockWithEntity {
         }
     }
 
-    public int getReceivedRedstonePower(World world, BlockPos pos, Direction direction) {
+    public int getReceivedRedstonePower(Level world, BlockPos pos, Direction direction) {
         int i = 0;
 
-        int j = world.getEmittedRedstonePower(pos.offset(direction), direction);
+        int j = world.getSignal(pos.relative(direction), direction);
         if (j >= 15) {
             return 15;
         }
@@ -90,33 +95,33 @@ public class FermentationControllerBlock extends BlockWithEntity {
     }
 
     @Override
-    protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-        builder.add(HorizontalFacingBlock.FACING, STATE, VERTICAL);
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        builder.add(HorizontalDirectionalBlock.FACING, STATE, VERTICAL);
     }
 
     @Override
-    public BlockState getPlacementState(ItemPlacementContext ctx) {
-        PlayerEntity player = ctx.getPlayer();
-        boolean bl = player == null || !player.isSneaking();
-        return this.getDefaultState().with(HorizontalFacingBlock.FACING, ctx.getHorizontalPlayerFacing().getOpposite()).with(STATE, State.NONE).with(VERTICAL, bl);
+    public BlockState getStateForPlacement(BlockPlaceContext ctx) {
+        Player player = ctx.getPlayer();
+        boolean bl = player == null || !player.isShiftKeyDown();
+        return this.defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, ctx.getHorizontalDirection().getOpposite()).setValue(STATE, State.NONE).setValue(VERTICAL, bl);
     }
 
     @Override
-    public BlockState rotate(BlockState state, BlockRotation rotation) {
-        return state.with(HorizontalFacingBlock.FACING, rotation.rotate(state.get(HorizontalFacingBlock.FACING)));
+    public BlockState rotate(BlockState state, Rotation rotation) {
+        return state.setValue(HorizontalDirectionalBlock.FACING, rotation.rotate(state.getValue(HorizontalDirectionalBlock.FACING)));
     }
 
     @Override
-    public BlockState mirror(BlockState state, BlockMirror mirror) {
-        return state.rotate(mirror.getRotation(state.get(HorizontalFacingBlock.FACING)));
+    public BlockState mirror(BlockState state, Mirror mirror) {
+        return state.rotate(mirror.getRotation(state.getValue(HorizontalDirectionalBlock.FACING)));
     }
 
     @Override
-    public BlockRenderType getRenderType(BlockState state) {
-        return BlockRenderType.MODEL;
+    public RenderShape getRenderShape(BlockState state) {
+        return RenderShape.MODEL;
     }
 
-    public enum State implements StringIdentifiable {
+    public enum State implements StringRepresentable {
         NONE("none"),
         HOT("hot"),
         COLD("cold");
@@ -132,7 +137,7 @@ public class FermentationControllerBlock extends BlockWithEntity {
         }
 
         @Override
-        public String asString() {
+        public String getSerializedName() {
             return this.name;
         }
     }

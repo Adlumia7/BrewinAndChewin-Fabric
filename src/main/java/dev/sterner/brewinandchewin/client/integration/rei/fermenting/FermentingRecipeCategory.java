@@ -12,9 +12,8 @@ import me.shedaniel.rei.api.client.registry.display.DisplayCategory;
 import me.shedaniel.rei.api.common.category.CategoryIdentifier;
 import me.shedaniel.rei.api.common.entry.EntryIngredient;
 import me.shedaniel.rei.api.common.util.EntryStacks;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
-
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,7 +22,7 @@ public class FermentingRecipeCategory implements DisplayCategory<FermentingRecip
     private static final java.awt.Rectangle COLD_BAR = new java.awt.Rectangle(54, 23, 7, 4);
     private static final java.awt.Rectangle WARM_BAR = new java.awt.Rectangle(67, 23, 7, 4);
     private static final java.awt.Rectangle HOT_BAR = new java.awt.Rectangle(74, 23, 7, 4);
-    private static final Identifier GUI_TEXTURE = new Identifier(BrewinAndChewin.MODID, "textures/gui/jei/keg.png");
+    private static final ResourceLocation GUI_TEXTURE = new ResourceLocation(BrewinAndChewin.MODID, "textures/gui/jei/keg.png");
 
     @Override
     public CategoryIdentifier<? extends FermentingRecipeDisplay> getCategoryIdentifier() {
@@ -31,8 +30,8 @@ public class FermentingRecipeCategory implements DisplayCategory<FermentingRecip
     }
 
     @Override
-    public Text getTitle() {
-        return Text.translatable(BrewinAndChewin.MODID + ".rei.fermenting");
+    public Component getTitle() {
+        return Component.translatable(BrewinAndChewin.MODID + ".rei.fermenting");
     }
 
     @Override
