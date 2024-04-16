@@ -109,34 +109,34 @@ public class KegScreen extends AbstractContainerScreen<KegBlockScreenHandler> {
             return;
         }
 
-        context.blit(INVENTORY_LOCATION, this.leftPos, this.topPos, 0, 0, this.imageWidth, this.imageHeight);
+        context.blit(BACKGROUND_TEXTURE, this.leftPos, this.topPos, 0, 0, this.imageWidth, this.imageHeight);
 
         // Render progress arrow
         int l = this.menu.getFermentProgressionScaled();
-        context.blit(INVENTORY_LOCATION, this.leftPos + PROGRESS_ARROW.x, this.topPos + PROGRESS_ARROW.y, 176, 28, l + 1, PROGRESS_ARROW.height);
+        context.blit(BACKGROUND_TEXTURE, this.leftPos + PROGRESS_ARROW.x, this.topPos + PROGRESS_ARROW.y, 176, 28, l + 1, PROGRESS_ARROW.height);
 
         int temp = this.menu.getTemperature();
         if (temp < -4 && temp > -9) {
-            context.blit(INVENTORY_LOCATION, this.leftPos + COLD_BAR.x, this.topPos + COLD_BAR.y, 182, 0, COLD_BAR.width, COLD_BAR.height);
+            context.blit(BACKGROUND_TEXTURE, this.leftPos + COLD_BAR.x, this.topPos + COLD_BAR.y, 182, 0, COLD_BAR.width, COLD_BAR.height);
         }
         if (temp < -8) {
-            context.blit(INVENTORY_LOCATION, this.leftPos + COLD_BAR.x, this.topPos + COLD_BAR.y, 182, 0, COLD_BAR.width, COLD_BAR.height);
-            context.blit(INVENTORY_LOCATION, this.leftPos + FRIGID_BAR.x, this.topPos + FRIGID_BAR.y, 176, 0, FRIGID_BAR.width, FRIGID_BAR.height);
+            context.blit(BACKGROUND_TEXTURE, this.leftPos + COLD_BAR.x, this.topPos + COLD_BAR.y, 182, 0, COLD_BAR.width, COLD_BAR.height);
+            context.blit(BACKGROUND_TEXTURE, this.leftPos + FRIGID_BAR.x, this.topPos + FRIGID_BAR.y, 176, 0, FRIGID_BAR.width, FRIGID_BAR.height);
         }
         if (temp > 4 && temp < 9) {
-            context.blit(INVENTORY_LOCATION, this.leftPos + WARM_BAR.x, this.topPos + WARM_BAR.y, 195, 0, WARM_BAR.width, WARM_BAR.height);
+            context.blit(BACKGROUND_TEXTURE, this.leftPos + WARM_BAR.x, this.topPos + WARM_BAR.y, 195, 0, WARM_BAR.width, WARM_BAR.height);
         }
         if (temp > 8) {
-            context.blit(INVENTORY_LOCATION, this.leftPos + WARM_BAR.x, this.topPos + WARM_BAR.y, 195, 0, WARM_BAR.width, WARM_BAR.height);
-            context.blit(INVENTORY_LOCATION, this.leftPos + HOT_BAR.x, this.topPos + HOT_BAR.y, 202, 0, HOT_BAR.width, HOT_BAR.height);
+            context.blit(BACKGROUND_TEXTURE, this.leftPos + WARM_BAR.x, this.topPos + WARM_BAR.y, 195, 0, WARM_BAR.width, WARM_BAR.height);
+            context.blit(BACKGROUND_TEXTURE, this.leftPos + HOT_BAR.x, this.topPos + HOT_BAR.y, 202, 0, HOT_BAR.width, HOT_BAR.height);
         }
 
         int i = this.menu.getFermentingTicks();
         if (i > 0) {
             int j;
             j = BUBBLELENGTHS[i / 5 % 7];
-            context.blit(INVENTORY_LOCATION, this.leftPos + BUBBLE_1.x, this.topPos + BUBBLE_1.y, 176, 4, BUBBLE_1.width, BUBBLE_1.height - j);
-            context.blit(INVENTORY_LOCATION, this.leftPos + BUBBLE_2.x, this.topPos + BUBBLE_2.y, 186, 4, BUBBLE_2.width, BUBBLE_2.height - j);
+            context.blit(BACKGROUND_TEXTURE, this.leftPos + BUBBLE_1.x, this.topPos + BUBBLE_1.y, 176, 4, BUBBLE_1.width, BUBBLE_1.height - j);
+            context.blit(BACKGROUND_TEXTURE, this.leftPos + BUBBLE_2.x, this.topPos + BUBBLE_2.y, 186, 4, BUBBLE_2.width, BUBBLE_2.height - j);
         }
     }
 
