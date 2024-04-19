@@ -7,6 +7,11 @@ import com.google.gson.JsonParseException;
 import dev.sterner.brewinandchewin.common.registry.BCRecipeTypes;
 import java.util.ArrayList;
 import java.util.List;
+
+import dev.sterner.brewinandchewin.common.util.RecipeMatcher;
+import io.github.fabricators_of_create.porting_lib.transfer.item.RecipeWrapper;
+import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
+import net.fabricmc.fabric.api.transfer.v1.storage.base.SingleSlotStorage;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.FriendlyByteBuf;
@@ -21,7 +26,7 @@ import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
 
-public class KegRecipe implements Recipe<Container> {
+public class KegRecipe implements Recipe<RecipeWrapper> {
     public static final int INPUT_SLOTS = 4;
 
     private final ResourceLocation id;
@@ -64,28 +69,30 @@ public class KegRecipe implements Recipe<Container> {
         return ingredients;
     }
 
+
+
     @Override
-    public boolean matches(Container inventory, Level world) {
-        StackedContents stackedContents = new StackedContents();
+    public boolean matches(RecipeWrapper container, Level level) {
+        List<ItemStack> inputs = new ArrayList();
         int i = 0;
 
         for (int j = 0; j < 4; ++j) {
-            ItemStack itemstack = inventory.getItem(j);
+            ItemStack itemstack = container.getItem(j);
             if (!itemstack.isEmpty()) {
                 ++i;
-                stackedContents.accountStack(itemstack);
+                inputs.add(itemstack);
             }
         }
 
         if (this.fluidItem != null) {
-            return i == this.ingredientList.size() && stackedContents.canCraft(this, null) && this.fluidItem.test(inventory.getItem(4));
+            return i == this.ingredientList.size() && RecipeMatcher.findMatches(inputs, this.ingredientList) != null && this.fluidItem.test(container.getItem(4));
         } else {
-            return i == this.ingredientList.size() && stackedContents.canCraft(this, null);
+            return i == this.ingredientList.size() && RecipeMatcher.findMatches(inputs, this.ingredientList) != null;
         }
     }
 
     @Override
-    public ItemStack assemble(Container inventory, RegistryAccess registryManager) {
+    public ItemStack assemble(RecipeWrapper container, RegistryAccess registryAccess) {
         return output.copy();
     }
 

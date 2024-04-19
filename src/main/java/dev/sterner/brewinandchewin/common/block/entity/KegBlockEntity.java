@@ -10,6 +10,7 @@ import dev.sterner.brewinandchewin.common.registry.BCRecipeTypes;
 import dev.sterner.brewinandchewin.common.registry.BCTags;
 import dev.sterner.brewinandchewin.common.util.BCTextUtils;
 import io.github.fabricators_of_create.porting_lib.transfer.item.ItemStackHandlerContainer;
+import io.github.fabricators_of_create.porting_lib.transfer.item.RecipeWrapper;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
@@ -32,6 +33,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.inventory.RecipeHolder;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.level.Level;
@@ -40,15 +42,18 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
+import vectorwing.farmersdelight.common.block.entity.CookingPotBlockEntity;
 import vectorwing.farmersdelight.common.block.entity.SyncedBlockEntity;
+import vectorwing.farmersdelight.common.crafting.CookingPotRecipe;
 import vectorwing.farmersdelight.common.mixin.accessor.RecipeManagerAccessor;
+import vectorwing.farmersdelight.common.registry.ModRecipeTypes;
 import vectorwing.farmersdelight.common.tag.ModTags;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class KegBlockEntity extends SyncedBlockEntity implements ExtendedScreenHandlerFactory, Nameable {
+public class KegBlockEntity extends SyncedBlockEntity implements ExtendedScreenHandlerFactory, Nameable, RecipeHolder {
     public static final int MEAL_DISPLAY_SLOT = 5;
     public static final int CONTAINER_SLOT = 7;
     public static final int OUTPUT_SLOT = 8;
@@ -87,6 +92,7 @@ public class KegBlockEntity extends SyncedBlockEntity implements ExtendedScreenH
             }
         };
     }
+
 
     @Override
     public void load(CompoundTag compound) {
@@ -145,7 +151,8 @@ public class KegBlockEntity extends SyncedBlockEntity implements ExtendedScreenH
         boolean didInventoryChange = false;
         keg.updateTemperature();
         if (keg.hasInput()) {
-            Optional<KegRecipe> recipe = keg.getMatchingRecipe(keg.inventory);
+            Optional<KegRecipe> recipe = keg.getMatchingRecipe(new RecipeWrapper(keg.inventory));
+
             if (recipe.isPresent() && keg.canFerment(recipe.get())) {
                 didInventoryChange = keg.processFermenting(recipe.get(), keg);
             } else {
@@ -266,16 +273,16 @@ public class KegBlockEntity extends SyncedBlockEntity implements ExtendedScreenH
     public static void animationTick(Level level, BlockPos pos, BlockState state, KegBlockEntity keg) {
     }
 
-    private Optional<KegRecipe> getMatchingRecipe(ItemStackHandlerContainer inventoryWrapper) {
+    private Optional<KegRecipe> getMatchingRecipe(RecipeWrapper inventoryWrapper) {
         if (level == null) return Optional.empty();
 
         if (lastRecipeID != null) {
-            Recipe<Container> recipe = ((RecipeManagerAccessor) level.getRecipeManager()).getRecipeMap(BCRecipeTypes.KEG_RECIPE_TYPE).get(lastRecipeID);
-            if (recipe != null) {
+            Recipe<RecipeWrapper> recipe = ((RecipeManagerAccessor) level.getRecipeManager()).getRecipeMap(BCRecipeTypes.KEG_RECIPE_TYPE).get(lastRecipeID);
+            if (recipe instanceof KegRecipe) {
                 if (recipe.matches(inventoryWrapper, level)) {
                     return Optional.of((KegRecipe) recipe);
                 }
-                if (ItemStack.isSameItem(recipe.getResultItem(level.registryAccess()), getDrink())) {
+                if (ItemStack.isSameItem(recipe.getResultItem(this.level.registryAccess()), getDrink())) {
                     return Optional.empty();
                 }
             }
@@ -283,8 +290,11 @@ public class KegBlockEntity extends SyncedBlockEntity implements ExtendedScreenH
 
         if (checkNewRecipe) {
             Optional<KegRecipe> recipe = level.getRecipeManager().getRecipeFor(BCRecipeTypes.KEG_RECIPE_TYPE, inventoryWrapper, level);
+
             if (recipe.isPresent()) {
-                lastRecipeID = recipe.get().getId();
+                ResourceLocation newRecipeID = recipe.get().getId();
+
+                lastRecipeID = newRecipeID;
                 return recipe;
             }
         }
@@ -388,7 +398,7 @@ public class KegBlockEntity extends SyncedBlockEntity implements ExtendedScreenH
                     }
                 }
 
-                keg.setLastRecipe(recipe);
+                keg.setRecipeUsed(recipe);
 
                 for (int i = 0; i < 4; ++i) {
                     ItemStack slotStack = this.inventory.getItem(i);
@@ -413,12 +423,7 @@ public class KegBlockEntity extends SyncedBlockEntity implements ExtendedScreenH
         }
     }
 
-    public void setLastRecipe(@Nullable Recipe<?> recipe) {
-        if (recipe != null) {
-            ResourceLocation recipeID = recipe.getId();
-            usedRecipeTracker.addTo(recipeID, 1);
-        }
-    }
+
 
     public void unlockLastRecipe(Player player) {
         List<Recipe<?>> usedRecipes = this.getUsedRecipesAndPopExperience(player.level(), player.position());
@@ -551,6 +556,20 @@ public class KegBlockEntity extends SyncedBlockEntity implements ExtendedScreenH
     @Override
     public void writeScreenOpeningData(ServerPlayer player, FriendlyByteBuf buf) {
         buf.writeBlockPos(worldPosition);
+    }
+
+    @Override
+    public void setRecipeUsed(@Nullable Recipe<?> recipe) {
+        if (recipe != null) {
+            ResourceLocation recipeID = recipe.getId();
+            usedRecipeTracker.addTo(recipeID, 1);
+        }
+    }
+
+    @Nullable
+    @Override
+    public Recipe<?> getRecipeUsed() {
+        return null;
     }
 
     private class KegSyncedData implements ContainerData {
