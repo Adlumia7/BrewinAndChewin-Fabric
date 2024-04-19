@@ -4,13 +4,13 @@
   "fermentingtime": 12000,
   "ingredients": [
     {
-      "tag": "brewinandchewin:raw_meats"
+      "tag": "c:foods/raw_meats"
     },
     {
-      "tag": "brewinandchewin:raw_meats"
+      "tag": "c:foods/raw_meats"
     },
     {
-      "tag": "brewinandchewin:raw_meats"
+      "tag": "c:foods/raw_meats"
     }
   ],
   "recipe_book_tab": "misc",
