@@ -28,10 +28,10 @@
   "container": {
     "item": "brewinandchewin:tankard"
   },
-  "liquid": {
+  "fluiditem": {
     "item": "farmersrespite:green_tea"
   },
   "experience": 0.6,
-  "cookingtime": 12000,
+  "fermentingtime": 12000,
   "temperature": 3
 }
