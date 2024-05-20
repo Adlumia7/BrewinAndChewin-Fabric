@@ -512,7 +512,7 @@ public class KegBlockEntity extends SyncedBlockEntity implements ExtendedScreenH
     }
 
     public boolean isContainerValid(ItemStack containerItem) {
-        if (containerItem.isEmpty()) {
+        if (containerItem.isEmpty() || this.getDrink().isEmpty()) {
             return false;
         } else {
             return !this.drinkContainerStack.isEmpty() ? ItemStack.isSameItem(this.drinkContainerStack, containerItem) : ItemStack.isSameItem(this.getDrink().getItem().getCraftingRemainingItem().getDefaultInstance(), containerItem);
