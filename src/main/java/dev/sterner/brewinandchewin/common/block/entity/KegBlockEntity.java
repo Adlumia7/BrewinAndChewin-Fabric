@@ -382,19 +382,21 @@ public class KegBlockEntity extends SyncedBlockEntity implements ExtendedScreenH
 
                 ItemStack storedContainers = this.inventory.getItem(8);
                 ItemStack fluidStack = this.inventory.getItem(4);
-                if (storedContainers.isEmpty()) {
-                    this.inventory.setItem(8, new ItemStack(fluidStack.copy().getItem().getCraftingRemainingItem()));
-                    if (fluidStack.getCount() == 1) {
-                        this.inventory.setItem(4, ItemStack.EMPTY);
-                    } else {
-                        this.inventory.setItem(4, new ItemStack(fluidStack.getItem(), fluidStack.getCount() - 1));
-                    }
-                } else if (ItemStack.isSameItem(storedContainers, this.inventory.getItem(4).getItem().getCraftingRemainingItem().getDefaultInstance())) {
-                    storedContainers.grow(resultStack.getCount());
-                    if (fluidStack.getCount() == 1) {
-                        this.inventory.setItem(4, ItemStack.EMPTY);
-                    } else {
-                        this.inventory.setItem(4, new ItemStack(fluidStack.getItem(), fluidStack.getCount() - 1));
+                if (!fluidStack.isEmpty()) {
+                    if (storedContainers.isEmpty()) {
+                        this.inventory.setItem(8, new ItemStack(fluidStack.copy().getItem().getCraftingRemainingItem()));
+                        if (fluidStack.getCount() == 1) {
+                            this.inventory.setItem(4, ItemStack.EMPTY);
+                        } else {
+                            this.inventory.setItem(4, new ItemStack(fluidStack.getItem(), fluidStack.getCount() - 1));
+                        }
+                    } else if (ItemStack.isSameItem(storedContainers, this.inventory.getItem(4).getItem().getCraftingRemainingItem().getDefaultInstance())) {
+                        storedContainers.grow(resultStack.getCount());
+                        if (fluidStack.getCount() == 1) {
+                            this.inventory.setItem(4, ItemStack.EMPTY);
+                        } else {
+                            this.inventory.setItem(4, new ItemStack(fluidStack.getItem(), fluidStack.getCount() - 1));
+                        }
                     }
                 }
 
